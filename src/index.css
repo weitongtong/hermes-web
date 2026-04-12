@@ -3,44 +3,62 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-hermes: #D4A048;
-  --color-hermes-light: #E4B868;
-  --color-hermes-dark: #B8862E;
-  --color-hermes-glow: #D4A04820;
+  --color-hermes: #C9963C;
+  --color-hermes-light: #DEBA6A;
+  --color-hermes-dark: #A67B2E;
+  --color-hermes-glow: #C9963C20;
 
-  --color-surface: #FAFAF8;
+  --color-surface: #F8F6F1;
   --color-surface-raised: #FFFFFF;
-  --color-surface-overlay: #F5F3EE;
+  --color-surface-overlay: #F0EDE6;
+
+  --color-warm-border: #E8E2D8;
+  --color-warm-text: #2C2418;
+  --color-warm-secondary: #7A7062;
+  --color-warm-muted: #B0A899;
+
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: #C9963C30;
+  color: #A67B2E;
 }
 
 pre code {
+  font-family: var(--font-mono);
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: #C9C2B6;
+  border-radius: 99px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #b0b5bd;
+  background: #AEA89C;
 }
 
-/* Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -53,10 +71,53 @@ pre code {
   to { opacity: 1; }
 }
 
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
 .animate-fade-in-up {
-  animation: fadeInUp 0.3s ease-out both;
+  animation: fadeInUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s ease-out both;
+  animation: fadeIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, #E8E2D840 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+.shadow-warm {
+  box-shadow: 0 1px 3px rgba(180, 160, 130, 0.06), 0 4px 12px rgba(180, 160, 130, 0.08);
+}
+
+.shadow-warm-lg {
+  box-shadow: 0 2px 6px rgba(180, 160, 130, 0.08), 0 8px 24px rgba(180, 160, 130, 0.12);
 }

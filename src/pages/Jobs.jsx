@@ -11,16 +11,16 @@ import { cn } from '@/lib/cn';
 
 const STATE_MAP = {
   scheduled: { label: '已调度', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  paused:    { label: '已暂停', cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+  paused:    { label: '已暂停', cls: 'bg-surface-overlay text-warm-secondary border-warm-border' },
   running:   { label: '运行中', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
   completed: { label: '已完成', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
   error:     { label: '错误',   cls: 'bg-red-50 text-red-600 border-red-200' },
 };
 
 function StateBadge({ state }) {
-  const s = STATE_MAP[state] || { label: state, cls: 'bg-gray-50 text-gray-500 border-gray-200' };
+  const s = STATE_MAP[state] || { label: state, cls: 'bg-surface-overlay text-warm-secondary border-warm-border' };
   return (
-    <span className={cn('inline-block text-[11px] font-medium px-2 py-0.5 rounded-full border', s.cls)}>
+    <span className={cn('inline-block text-[11px] font-medium px-2.5 py-0.5 rounded-full border', s.cls)}>
       {s.label}
     </span>
   );
@@ -33,15 +33,15 @@ function formatTime(iso) {
 
 function ConfirmDialog({ title, message, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-xl p-6 shadow-xl max-w-sm w-full mx-4 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-        <p className="text-xs text-gray-500">{message}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl p-6 shadow-warm-lg max-w-sm w-full mx-4 space-y-4 animate-scale-in">
+        <h3 className="text-sm font-semibold text-warm-text">{title}</h3>
+        <p className="text-xs text-warm-secondary">{message}</p>
         <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={onCancel} className="px-3 py-1.5 text-xs text-warm-secondary hover:text-warm-text rounded-xl hover:bg-surface-overlay transition-colors duration-200">
             取消
           </button>
-          <button onClick={onConfirm} className="px-3 py-1.5 text-xs text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors">
+          <button onClick={onConfirm} className="px-3 py-1.5 text-xs text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors duration-200">
             确认
           </button>
         </div>
@@ -164,26 +164,26 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
     onSubmit(data);
   };
 
-  const inputCls = 'w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-hermes/60 focus:ring-1 focus:ring-hermes/20';
+  const inputCls = 'w-full bg-white border border-warm-border rounded-xl px-3 py-2 text-sm text-warm-text focus:outline-none focus:border-hermes/40 focus:ring-1 focus:ring-hermes/15 transition-all duration-200';
   const tabCls = (active) => cn(
-    'px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
-    active ? 'bg-hermes/10 text-hermes' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+    'px-3 py-1.5 text-xs font-medium rounded-xl transition-all duration-200',
+    active ? 'bg-hermes/8 text-hermes-dark' : 'text-warm-muted hover:text-warm-secondary hover:bg-surface-overlay'
   );
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm space-y-4">
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 shadow-warm space-y-4">
       <div>
-        <label className="text-xs text-gray-400 block mb-1">名称 *</label>
+        <label className="text-xs text-warm-muted block mb-1">名称 *</label>
         <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="例如：每日新闻摘要" />
       </div>
 
       <div>
-        <label className="text-xs text-gray-400 block mb-1">提示词 *</label>
+        <label className="text-xs text-warm-muted block mb-1">提示词 *</label>
         <textarea required value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} className={cn(inputCls, 'resize-none')} placeholder="Agent 每次执行时收到的指令" />
       </div>
 
       <div>
-        <label className="text-xs text-gray-400 block mb-1.5">调度模式 *</label>
+        <label className="text-xs text-warm-muted block mb-1.5">调度模式 *</label>
         <div className="flex gap-1 mb-3">
           {[
             { key: 'once', label: '一次性' },
@@ -199,11 +199,11 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
         {scheduleTab === 'once' && (
           <div className="space-y-2">
             <div className="flex gap-3">
-              <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+              <label className="flex items-center gap-1.5 text-xs text-warm-secondary cursor-pointer">
                 <input type="radio" name="onceMode" checked={onceMode === 'delay'} onChange={() => setOnceMode('delay')} className="accent-hermes" />
                 延迟执行
               </label>
-              <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+              <label className="flex items-center gap-1.5 text-xs text-warm-secondary cursor-pointer">
                 <input type="radio" name="onceMode" checked={onceMode === 'datetime'} onChange={() => setOnceMode('datetime')} className="accent-hermes" />
                 指定时间
               </label>
@@ -236,7 +236,7 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
             <div className="flex flex-wrap gap-1.5">
               {CRON_PRESETS.map((p) => (
                 <button key={p.value} type="button" onClick={() => setCronExpr(p.value)}
-                  className="px-2 py-1 text-[11px] bg-gray-100 hover:bg-hermes/10 text-gray-500 hover:text-hermes rounded-md transition-colors">
+                  className="px-2.5 py-1 text-[11px] bg-surface-overlay hover:bg-hermes/8 text-warm-secondary hover:text-hermes-dark rounded-lg transition-colors duration-200">
                   {p.label}
                 </button>
               ))}
@@ -247,20 +247,20 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
 
       {scheduleTab !== 'once' && (
         <div>
-          <label className="text-xs text-gray-400 block mb-1">重复次数</label>
+          <label className="text-xs text-warm-muted block mb-1">重复次数</label>
           <input value={repeat} onChange={(e) => setRepeat(e.target.value)} type="number" min="1" className={inputCls} placeholder="留空=无限" />
         </div>
       )}
 
       <div>
         <div className="flex items-center gap-1.5 mb-1">
-          <label className="text-xs text-gray-400">投递目标</label>
-          <button type="button" onClick={() => setShowDeliverHelp((v) => !v)} className="text-gray-300 hover:text-hermes transition-colors">
+          <label className="text-xs text-warm-muted">投递目标</label>
+          <button type="button" onClick={() => setShowDeliverHelp((v) => !v)} className="text-warm-muted hover:text-hermes transition-colors duration-200">
             <Info size={12} />
           </button>
         </div>
         {showDeliverHelp && (
-          <div className="mb-2 bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 space-y-1.5">
+          <div className="mb-2 bg-surface-overlay rounded-xl p-3 text-xs text-warm-secondary space-y-1.5 border border-warm-border/60">
             <p>任务执行完成后，Agent 的输出结果发送到哪里：</p>
             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
               <span className="text-hermes font-medium">本地</span>
@@ -270,7 +270,7 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
               <span className="text-hermes font-medium">平台 + 频道</span>
               <span>发送到指定平台的特定群组或会话</span>
             </div>
-            <p className="text-gray-400">留空频道时使用平台的默认频道（由环境变量配置）</p>
+            <p className="text-warm-muted">留空频道时使用平台的默认频道（由环境变量配置）</p>
           </div>
         )}
         <div className="flex gap-2">
@@ -299,7 +299,7 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
       </div>
 
       <div>
-        <label className="text-xs text-gray-400 block mb-1">模型</label>
+        <label className="text-xs text-warm-muted block mb-1">模型</label>
         <input
           list="model-options" value={model} onChange={(e) => setModel(e.target.value)} className={inputCls}
           placeholder={defaultModel ? `使用默认（${defaultModel}）` : '使用默认'}
@@ -312,13 +312,13 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
       <div className="flex gap-2 pt-1">
         <button
           type="submit" disabled={isSubmitting || !isScheduleValid()}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-hermes/10 text-hermes hover:bg-hermes/20 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm bg-hermes/10 text-hermes-dark hover:bg-hermes/15 transition-colors duration-200 disabled:opacity-50 font-medium"
         >
           {isSubmitting ? '提交中...' : job ? '保存修改' : '创建任务'}
         </button>
         <button
           type="button" onClick={onCancel}
-          className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          className="px-4 py-2 rounded-xl text-sm text-warm-muted hover:text-warm-text hover:bg-surface-overlay transition-colors duration-200"
         >
           取消
         </button>
@@ -346,78 +346,78 @@ function JobDetail({ job, onBack, onEdit }) {
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors">
+      <button onClick={onBack} className="flex items-center gap-1 text-sm text-warm-muted hover:text-warm-text transition-colors duration-200">
         <ChevronLeft size={16} /> 返回列表
       </button>
 
       {toast && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5 text-xs text-blue-700 animate-in fade-in">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-xs text-blue-700 animate-fade-in">
           {toast}
         </div>
       )}
 
-      <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl p-5 shadow-warm space-y-4">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">{job.name}</h2>
-            <p className="text-xs text-gray-400 mt-0.5 font-mono">{job.id}</p>
+            <h2 className="text-lg font-semibold text-warm-text">{job.name}</h2>
+            <p className="text-xs text-warm-muted mt-0.5 font-mono">{job.id}</p>
           </div>
           <StateBadge state={job.state} />
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">提示词</p>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{job.prompt}</p>
+        <div className="bg-surface-overlay/60 rounded-xl p-3 border border-warm-border/50">
+          <p className="text-xs text-warm-muted mb-1">提示词</p>
+          <p className="text-sm text-warm-text whitespace-pre-wrap">{job.prompt}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-xs text-gray-400">调度</p>
-            <p className="text-gray-700 font-mono">{job.schedule_display || '-'}</p>
+            <p className="text-xs text-warm-muted">调度</p>
+            <p className="text-warm-text font-mono">{job.schedule_display || '-'}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">重复</p>
-            <p className="text-gray-700">
+            <p className="text-xs text-warm-muted">重复</p>
+            <p className="text-warm-text">
               {repeat.times == null ? '无限循环' : `${repeat.completed || 0} / ${repeat.times} 次`}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">下次执行</p>
-            <p className="text-gray-700">{formatTime(job.next_run_at)}</p>
+            <p className="text-xs text-warm-muted">下次执行</p>
+            <p className="text-warm-text">{formatTime(job.next_run_at)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">上次执行</p>
-            <p className="text-gray-700">{formatTime(job.last_run_at)}</p>
+            <p className="text-xs text-warm-muted">上次执行</p>
+            <p className="text-warm-text">{formatTime(job.last_run_at)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">投递目标</p>
-            <p className="text-gray-700">{PLATFORM_LABELS[job.deliver] || job.deliver || 'local'}</p>
+            <p className="text-xs text-warm-muted">投递目标</p>
+            <p className="text-warm-text">{PLATFORM_LABELS[job.deliver] || job.deliver || '本地'}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">模型</p>
-            <p className="text-gray-700">{job.model || '默认'}</p>
+            <p className="text-xs text-warm-muted">模型</p>
+            <p className="text-warm-text">{job.model || '默认'}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">创建时间</p>
-            <p className="text-gray-700">{formatTime(job.created_at)}</p>
+            <p className="text-xs text-warm-muted">创建时间</p>
+            <p className="text-warm-text">{formatTime(job.created_at)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">上次状态</p>
-            <p className="text-gray-700">{job.last_status || '-'}</p>
+            <p className="text-xs text-warm-muted">上次状态</p>
+            <p className="text-warm-text">{job.last_status || '-'}</p>
           </div>
         </div>
 
         {(job.last_error || job.last_delivery_error) && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-600 space-y-1">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 space-y-1">
             {job.last_error && <p><strong>执行错误：</strong>{job.last_error}</p>}
             {job.last_delivery_error && <p><strong>投递错误：</strong>{job.last_delivery_error}</p>}
           </div>
         )}
 
-        <div className="flex gap-2 pt-1 border-t border-gray-100">
+        <div className="flex gap-2 pt-1 border-t border-warm-border/50">
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 hover:text-hermes hover:bg-hermes/10 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-warm-secondary hover:text-hermes-dark hover:bg-hermes/8 rounded-xl transition-colors duration-200"
           >
             <Pencil size={13} /> 编辑
           </button>
@@ -425,14 +425,14 @@ function JobDetail({ job, onBack, onEdit }) {
             isPaused ? (
               <button
                 onClick={() => resumeMut.mutate(job.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors duration-200"
               >
                 <Play size={13} /> 恢复
               </button>
             ) : (
               <button
                 onClick={() => pauseMut.mutate(job.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-600 hover:bg-amber-50 rounded-xl transition-colors duration-200"
               >
                 <Pause size={13} /> 暂停
               </button>
@@ -440,13 +440,13 @@ function JobDetail({ job, onBack, onEdit }) {
           )}
           <button
             onClick={() => setConfirm({ type: 'run' })}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-xl transition-colors duration-200"
           >
             <Play size={13} /> {isCompleted ? '重新触发' : '立即执行'}
           </button>
           <button
             onClick={() => setConfirm({ type: 'delete' })}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200 ml-auto"
           >
             <Trash2 size={13} /> 删除
           </button>
@@ -483,19 +483,18 @@ function JobItem({ job, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white border border-gray-100 hover:border-hermes/20 hover:shadow-md hover:shadow-hermes/5 transition-all duration-200 group"
+      className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white shadow-warm hover:shadow-warm-lg hover:-translate-y-0.5 transition-all duration-200 group"
     >
-      <div className={cn(
-        'w-1 self-stretch rounded-full shrink-0 transition-colors',
-        isPaused ? 'bg-gray-200' : 'bg-emerald-300 group-hover:bg-hermes/60'
+      <CalendarClock size={16} className={cn(
+        'shrink-0 transition-colors duration-200',
+        isPaused ? 'text-warm-muted' : 'text-hermes group-hover:text-hermes-dark'
       )} />
-      <CalendarClock size={16} className="text-gray-400 group-hover:text-hermes transition-colors shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm text-gray-700 truncate font-medium">{job.name}</p>
+          <p className="text-sm text-warm-text truncate font-medium">{job.name}</p>
           <StateBadge state={job.state} />
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <p className="text-xs text-warm-muted mt-0.5">
           <span className="font-mono">{job.schedule_display || '-'}</span>
           {job.next_run_at && <span className="ml-2">下次: {formatTime(job.next_run_at)}</span>}
         </p>
@@ -523,7 +522,7 @@ export default function Jobs() {
     return (
       <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
         <div className="max-w-4xl mx-auto p-6 space-y-5">
-          <h1 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
             <Timer size={22} className="text-hermes" /> 新建定时任务
           </h1>
           <JobForm
@@ -540,7 +539,7 @@ export default function Jobs() {
     return (
       <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
         <div className="max-w-4xl mx-auto p-6 space-y-5">
-          <h1 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
             <Timer size={22} className="text-hermes" /> 编辑任务
           </h1>
           <JobForm
@@ -558,7 +557,7 @@ export default function Jobs() {
     return (
       <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
         <div className="max-w-4xl mx-auto p-6 space-y-5">
-          <h1 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
             <Timer size={22} className="text-hermes" /> 任务详情
           </h1>
           <JobDetail
@@ -575,21 +574,21 @@ export default function Jobs() {
 
   return (
     <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
-      <div className="max-w-4xl mx-auto p-6 space-y-5">
+      <div className="max-w-4xl mx-auto p-6 space-y-5 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
             <Timer size={22} className="text-hermes" /> 定时任务
           </h1>
           <button
             onClick={() => setMode('create')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-hermes bg-hermes/10 hover:bg-hermes/20 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-hermes-dark bg-hermes/8 hover:bg-hermes/12 rounded-xl transition-colors duration-200"
           >
             <Plus size={14} /> 新建任务
           </button>
         </div>
 
         {isCronUnavailable ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-2 text-xs text-amber-700">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-2 text-xs text-amber-700">
             <AlertTriangle size={14} className="shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">定时任务模块不可用</p>
@@ -599,31 +598,31 @@ export default function Jobs() {
         ) : (
           <>
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-muted" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="搜索任务..."
-                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-hermes/50 focus:ring-2 focus:ring-hermes/10 transition-all"
+                className="w-full bg-white border border-warm-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-warm-text placeholder:text-warm-muted focus:outline-none focus:border-hermes/40 focus:ring-2 focus:ring-hermes/10 transition-all duration-200"
               />
             </div>
 
             {isLoading ? (
-              <div className="text-sm text-gray-400 animate-pulse">加载中...</div>
+              <div className="text-sm text-warm-muted animate-pulse">加载中...</div>
             ) : isError ? (
               <div className="text-center py-12">
                 <p className="text-sm text-red-500">加载失败</p>
-                <p className="text-xs text-gray-400 mt-1">{error?.message || '未知错误'}</p>
+                <p className="text-xs text-warm-muted mt-1">{error?.message || '未知错误'}</p>
               </div>
             ) : !filtered.length ? (
               <div className="text-center py-12">
-                <Clock size={32} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-sm text-gray-400">{search ? '无匹配结果' : '暂无定时任务'}</p>
+                <Clock size={32} className="mx-auto text-warm-muted/50 mb-3" />
+                <p className="text-sm text-warm-muted">{search ? '无匹配结果' : '暂无定时任务'}</p>
                 {!search && (
                   <button
                     onClick={() => setMode('create')}
-                    className="mt-3 text-xs text-hermes hover:text-hermes-light transition-colors"
+                    className="mt-3 text-xs text-hermes hover:text-hermes-dark transition-colors duration-200"
                   >
                     创建第一个定时任务
                   </button>

@@ -9,7 +9,7 @@ function CodeBlock({ className, children, ...props }) {
 
   if (isInline) {
     return (
-      <code className="bg-hermes/8 text-hermes-dark px-1.5 py-0.5 rounded text-[0.85em] font-mono" {...props}>
+      <code className="bg-hermes/6 text-hermes-dark px-1.5 py-0.5 rounded text-[0.85em] font-mono" {...props}>
         {children}
       </code>
     );
@@ -18,11 +18,11 @@ function CodeBlock({ className, children, ...props }) {
   return (
     <div className="relative group my-3">
       {match && (
-        <div className="absolute top-0 right-0 px-2.5 py-1 text-[10px] text-gray-400 bg-surface-overlay rounded-bl-lg font-mono">
+        <div className="absolute top-0 right-0 px-2.5 py-1 text-[10px] text-hermes bg-surface-overlay/80 rounded-bl-xl rounded-tr-xl font-mono font-medium">
           {match[1]}
         </div>
       )}
-      <pre className="bg-surface-overlay/80 rounded-lg p-4 overflow-x-auto border border-gray-200/60">
+      <pre className="bg-[#F5F2EB] rounded-xl p-4 overflow-x-auto border border-warm-border/60">
         <code className={className} {...props}>
           {children}
         </code>
@@ -33,31 +33,37 @@ function CodeBlock({ className, children, ...props }) {
 
 export default function MarkdownRenderer({ content, className }) {
   return (
-    <div className={cn('prose prose-sm max-w-none prose-headings:text-gray-800 prose-p:text-gray-700 prose-strong:text-gray-800 prose-code:before:content-none prose-code:after:content-none', className)}>
+    <div className={cn(
+      'prose prose-sm max-w-none',
+      'prose-headings:text-warm-text prose-p:text-warm-secondary prose-strong:text-warm-text',
+      'prose-code:before:content-none prose-code:after:content-none',
+      'prose-li:text-warm-secondary prose-blockquote:text-warm-secondary prose-blockquote:border-hermes/30',
+      className
+    )}>
       <ReactMarkdown
         rehypePlugins={[rehypeHighlight]}
         remarkPlugins={[remarkGfm]}
         components={{
           code: CodeBlock,
           a: ({ children, ...props }) => (
-            <a {...props} className="text-hermes hover:text-hermes-light hover:underline underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer">
+            <a {...props} className="text-hermes hover:text-hermes-dark hover:underline underline-offset-2 transition-colors duration-200" target="_blank" rel="noopener noreferrer">
               {children}
             </a>
           ),
           table: ({ children }) => (
-            <div className="overflow-x-auto my-3 rounded-lg border border-gray-200">
+            <div className="overflow-x-auto my-3 rounded-xl border border-warm-border">
               <table className="border-collapse text-sm w-full">
                 {children}
               </table>
             </div>
           ),
           th: ({ children }) => (
-            <th className="border-b border-gray-200 bg-surface-overlay px-3 py-2 text-left font-medium text-gray-700 text-xs">
+            <th className="border-b border-warm-border bg-surface-overlay px-3 py-2 text-left font-medium text-warm-text text-xs">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border-b border-gray-100 px-3 py-2 text-gray-600">{children}</td>
+            <td className="border-b border-warm-border/40 px-3 py-2 text-warm-secondary">{children}</td>
           ),
         }}
       >

@@ -32,14 +32,14 @@ function ThinkingBlock({ content }) {
   return (
     <button
       onClick={() => setOpen(!open)}
-      className="w-full text-left text-xs text-gray-400 border border-gray-100 rounded-lg px-3 py-2 hover:bg-surface-overlay/60 transition-colors"
+      className="w-full text-left text-xs text-warm-secondary border border-dashed border-warm-border rounded-xl px-3 py-2 bg-surface-overlay/50 hover:bg-surface-overlay transition-colors duration-200"
     >
-      <span className="flex items-center gap-1.5 font-medium">
+      <span className="flex items-center gap-1.5 font-medium text-warm-secondary">
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        Thinking
+        思考过程
       </span>
       {open && (
-        <pre className="mt-2 whitespace-pre-wrap text-gray-500 font-normal leading-relaxed">{content}</pre>
+        <pre className="mt-2 whitespace-pre-wrap text-warm-secondary font-normal leading-relaxed text-xs">{content}</pre>
       )}
     </button>
   );
@@ -57,7 +57,7 @@ export default function MessageBubble({ message }) {
       <div className={cn('min-w-0', isUser ? 'max-w-[75%]' : 'flex-1 max-w-[85%]')}>
         {isUser ? (
           <div className="flex justify-end">
-            <div className="bg-gradient-to-br from-hermes to-hermes-dark text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-sm whitespace-pre-wrap shadow-sm">
+            <div className="bg-gradient-to-br from-hermes to-hermes-dark text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-sm whitespace-pre-wrap shadow-warm">
               {message.content}
             </div>
           </div>
@@ -73,15 +73,15 @@ export default function MessageBubble({ message }) {
               </div>
             )}
             {isThinking && (
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <div className="flex items-center gap-2 text-warm-muted text-sm">
                 <span className="inline-block w-2 h-2 rounded-full bg-hermes animate-pulse" />
-                Thinking...
+                思考中...
               </div>
             )}
             {!display && !thinking && !isThinking && !message.toolCalls?.length && !message.content && (
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <div className="flex items-center gap-2 text-warm-muted text-sm">
                 <span className="inline-block w-2 h-2 rounded-full bg-hermes animate-pulse" />
-                Thinking...
+                思考中...
               </div>
             )}
           </div>
@@ -89,7 +89,7 @@ export default function MessageBubble({ message }) {
       </div>
 
       {isUser && (
-        <div className="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-hermes/20 to-hermes/5 flex items-center justify-center mt-0.5">
+        <div className="shrink-0 w-8 h-8 rounded-xl bg-hermes/10 flex items-center justify-center mt-0.5">
           <User size={15} className="text-hermes-dark" />
         </div>
       )}

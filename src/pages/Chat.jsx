@@ -39,13 +39,13 @@ export default function Chat() {
       <ChatSessionList resetChat={resetChat} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)] z-10">
-          <h1 className="text-sm font-medium text-gray-700">
+        <header className="h-13 bg-white/70 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 border-b border-warm-border/50 z-10">
+          <h1 className="text-sm font-medium text-warm-text">
             {sessionId ? '对话' : '新对话'}
           </h1>
           <button
             onClick={handleNewChat}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-hermes transition-colors"
+            className="flex items-center gap-1.5 text-xs text-warm-muted hover:text-hermes transition-colors duration-200"
           >
             <Plus size={14} />
             新建对话
@@ -58,20 +58,20 @@ export default function Chat() {
               <Loader2 size={24} className="animate-spin text-hermes" />
             </div>
           ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 rounded-full bg-hermes/10 blur-2xl scale-150" />
-                <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-hermes to-hermes-dark flex items-center justify-center shadow-lg shadow-hermes/20">
-                  <span className="text-white text-3xl font-bold">H</span>
+            <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-fade-in">
+              <div className="relative mb-8">
+                <div className="absolute inset-0 rounded-full bg-hermes/8 blur-3xl scale-[2] animate-pulse-glow" />
+                <div className="relative">
+                  <img src="/hermes.svg" alt="Hermes" className="w-20 h-20 drop-shadow-lg" />
                 </div>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">Hermes Agent</h2>
-              <p className="text-sm text-gray-400 max-w-sm leading-relaxed">
+              <h2 className="text-xl font-semibold text-warm-text mb-2">Hermes Agent</h2>
+              <p className="text-sm text-warm-secondary max-w-sm leading-relaxed">
                 开始与 Hermes 对话。它可以执行命令、管理文件、编写代码等。
               </p>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto px-4 py-2">
+            <div className="max-w-3xl mx-auto px-4 py-3">
               {messages.map((msg, i) => (
                 <MessageBubble key={i} message={msg} />
               ))}

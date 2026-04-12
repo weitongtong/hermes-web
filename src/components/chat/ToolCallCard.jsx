@@ -12,14 +12,14 @@ export default function ToolCallCard({ toolCall }) {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden text-sm border border-gray-200 bg-white">
+    <div className="rounded-xl overflow-hidden text-sm border border-warm-border bg-white shadow-warm">
       <button
-        className="w-full flex items-center gap-2 px-3 py-2 bg-surface-overlay/50 hover:bg-surface-overlay transition-colors text-left"
+        className="w-full flex items-center gap-2 px-3 py-2 bg-surface-overlay/40 hover:bg-surface-overlay transition-colors duration-200 text-left"
         onClick={() => setExpanded((v) => !v)}
       >
         <Terminal size={13} className="text-hermes shrink-0" />
-        <span className="text-gray-700 font-mono text-xs truncate">{name}</span>
-        <span className="ml-auto text-gray-400">
+        <span className="text-hermes-dark font-mono text-xs truncate font-medium">{name}</span>
+        <span className="ml-auto text-warm-muted">
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
       </button>
@@ -30,8 +30,8 @@ export default function ToolCallCard({ toolCall }) {
           expanded ? 'max-h-96' : 'max-h-0'
         )}
       >
-        <div className="px-3 py-2 border-t border-gray-100 bg-surface">
-          <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap break-all font-mono">
+        <div className="px-3 py-2 border-t border-warm-border/60 bg-surface">
+          <pre className="text-xs text-warm-secondary overflow-x-auto whitespace-pre-wrap break-all font-mono">
             {typeof args === 'string' ? args : JSON.stringify(args, null, 2)}
           </pre>
         </div>
