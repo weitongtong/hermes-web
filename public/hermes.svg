@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <defs>
     <linearGradient id="g1" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#E4B868"/>
-      <stop offset="100%" stop-color="#C08A30"/>
+      <stop offset="0%" stop-color="#71717A"/>
+      <stop offset="100%" stop-color="#3B4049"/>
     </linearGradient>
     <linearGradient id="g2" x1="18" y1="6" x2="30" y2="10" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#D4A048"/>
-      <stop offset="100%" stop-color="#E4B868"/>
+      <stop offset="0%" stop-color="#525866"/>
+      <stop offset="100%" stop-color="#71717A"/>
     </linearGradient>
   </defs>
   <!-- H letter -->

@@ -22,7 +22,7 @@ function CodeBlock({ className, children, ...props }) {
           {match[1]}
         </div>
       )}
-      <pre className="bg-[#F5F2EB] rounded-xl p-4 overflow-x-auto border border-warm-border/60">
+      <pre className="bg-surface-overlay rounded-xl p-4 overflow-x-auto border border-warm-border/60">
         <code className={className} {...props}>
           {children}
         </code>

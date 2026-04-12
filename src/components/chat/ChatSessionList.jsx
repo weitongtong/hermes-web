@@ -46,7 +46,7 @@ export default function ChatSessionList({ resetChat }) {
 
   if (collapsed) {
     return (
-      <div className="w-12 shrink-0 bg-surface-overlay/40 flex flex-col items-center py-3 gap-2 shadow-[1px_0_8px_rgba(180,160,130,0.04)]">
+      <div className="w-12 shrink-0 bg-surface-overlay/40 flex flex-col items-center py-3 gap-2 shadow-[1px_0_8px_rgba(0,0,0,0.03)]">
         <button
           onClick={toggleCollapsed}
           className="p-2 rounded-xl text-warm-muted hover:text-warm-text hover:bg-white transition-colors duration-200"
@@ -66,7 +66,7 @@ export default function ChatSessionList({ resetChat }) {
   }
 
   return (
-    <div className="w-72 shrink-0 bg-surface-overlay/40 flex flex-col shadow-[1px_0_8px_rgba(180,160,130,0.04)]">
+    <div className="w-72 shrink-0 bg-surface-overlay/40 flex flex-col shadow-[1px_0_8px_rgba(0,0,0,0.03)]">
       <div className="h-13 flex items-center justify-between px-3 border-b border-warm-border/50 shrink-0">
         <span className="text-sm font-medium text-warm-text">对话</span>
         <div className="flex items-center gap-0.5">

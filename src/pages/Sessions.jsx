@@ -129,7 +129,7 @@ function SessionDetail({ id, onBack }) {
               {msg.content ? (
                 <MarkdownRenderer content={msg.content} className="text-sm" />
               ) : msg.tool_calls ? (
-                <pre className="text-xs text-warm-secondary bg-[#F5F2EB] p-3 rounded-xl overflow-x-auto font-mono border border-warm-border/60">{msg.tool_calls}</pre>
+                <pre className="text-xs text-warm-secondary bg-surface-overlay p-3 rounded-xl overflow-x-auto font-mono border border-warm-border/60">{msg.tool_calls}</pre>
               ) : (
                 <span className="text-xs text-warm-muted italic">空</span>
               )}

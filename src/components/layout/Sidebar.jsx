@@ -59,7 +59,7 @@ export default function Sidebar() {
   const { pathname } = useLocation();
 
   return (
-    <aside className="w-56 shrink-0 bg-[#FFFDF9] flex flex-col shadow-[2px_0_12px_rgba(180,160,130,0.06)]">
+    <aside className="w-56 shrink-0 bg-white flex flex-col shadow-[2px_0_12px_rgba(0,0,0,0.04)]">
       <div className="h-14 flex items-center gap-3 px-5">
         <img src="/hermes.svg" alt="Hermes" className="w-7 h-7" />
         <span className="font-semibold text-warm-text tracking-wide text-[15px]">Hermes</span>

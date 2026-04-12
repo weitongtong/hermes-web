@@ -44,7 +44,7 @@ function ConfigSection({ config }) {
 
       <div>
         <label className="text-xs text-warm-muted block mb-1.5 font-medium">原始配置 (JSON)</label>
-        <pre className="bg-[#F5F2EB] rounded-xl p-4 text-xs text-warm-secondary overflow-auto max-h-64 font-mono border border-warm-border/60">
+        <pre className="bg-surface-overlay rounded-xl p-4 text-xs text-warm-secondary overflow-auto max-h-64 font-mono border border-warm-border/60">
           {JSON.stringify(config, null, 2)}
         </pre>
       </div>
