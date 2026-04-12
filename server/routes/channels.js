@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import fs from 'fs';
+import { hermesPath } from '../utils/hermes-paths.js';
+
+const router = Router();
+
+router.get('/', (_req, res) => {
+  try {
+    const filePath = hermesPath('channel_directory.json');
+    if (!fs.existsSync(filePath)) {
+      return res.json({ platforms: {} });
+    }
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    res.json({ platforms: data.platforms || {} });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;
