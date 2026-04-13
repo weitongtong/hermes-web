@@ -1,86 +1,44 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Loader2 } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
+import SessionPanel from '@/components/chat/SessionPanel';
+import ChatHeader from '@/components/chat/ChatHeader';
+import ChatMessages from '@/components/chat/ChatMessages';
 import ChatInput from '@/components/chat/ChatInput';
-import MessageBubble from '@/components/chat/MessageBubble';
-import ChatSessionList from '@/components/chat/ChatSessionList';
 
 export default function Chat() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  const bottomRef = useRef(null);
 
   const onSessionCreated = useCallback(
     (newId) => navigate(`/chat/${encodeURIComponent(newId)}`, { replace: true }),
     [navigate],
   );
 
-  const {
-    messages,
-    isStreaming,
-    isLoadingHistory,
-    sendMessage,
-    stopStreaming,
-    resetChat,
-  } = useChat({ sessionId, onSessionCreated });
+  const { messages, isStreaming, isLoadingHistory, sendMessage, stopStreaming, resetChat } =
+    useChat({ sessionId, onSessionCreated });
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     resetChat();
     navigate('/chat');
-  };
+  }, [resetChat, navigate]);
 
   return (
-    <div className="flex h-full">
-      <ChatSessionList resetChat={resetChat} />
+    <div className="flex h-full bg-white">
+      <SessionPanel onNewChat={handleNewChat} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-13 bg-white/70 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 border-b border-warm-border/50 z-10">
-          <h1 className="text-sm font-medium text-warm-text">
-            {sessionId ? '对话' : '新对话'}
-          </h1>
-          <button
-            onClick={handleNewChat}
-            className="flex items-center gap-1.5 text-xs text-warm-muted hover:text-hermes transition-colors duration-200"
-          >
-            <Plus size={14} />
-            新建对话
-          </button>
-        </header>
-
-        <div className="flex-1 overflow-y-auto scrollbar-thin bg-surface">
-          {isLoadingHistory ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 size={24} className="animate-spin text-hermes" />
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-fade-in">
-              <div className="relative mb-8">
-                <div className="absolute inset-0 rounded-full bg-hermes/8 blur-3xl scale-[2] animate-pulse-glow" />
-                <div className="relative">
-                  <img src="/hermes.svg" alt="Hermes" className="w-20 h-20 drop-shadow-lg" />
-                </div>
-              </div>
-              <h2 className="text-xl font-semibold text-warm-text mb-2">Hermes Agent</h2>
-              <p className="text-sm text-warm-secondary max-w-sm leading-relaxed">
-                开始与 Hermes 对话。它可以执行命令、管理文件、编写代码等。
-              </p>
-            </div>
-          ) : (
-            <div className="max-w-3xl mx-auto px-4 py-3">
-              {messages.map((msg, i) => (
-                <MessageBubble key={i} message={msg} />
-              ))}
-              <div ref={bottomRef} />
-            </div>
-          )}
-        </div>
-
-        <ChatInput onSend={sendMessage} isStreaming={isStreaming} onStop={stopStreaming} />
+        <ChatHeader sessionId={sessionId} onNewChat={handleNewChat} />
+        <ChatMessages
+          messages={messages}
+          isLoading={isLoadingHistory}
+          onSuggestionClick={sendMessage}
+        />
+        <ChatInput
+          onSend={sendMessage}
+          isStreaming={isStreaming}
+          onStop={stopStreaming}
+        />
       </div>
     </div>
   );

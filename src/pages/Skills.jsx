@@ -113,7 +113,7 @@ export default function Skills() {
     <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
       <div className="max-w-4xl mx-auto p-6 space-y-5 animate-fade-in">
         <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
-          <Sparkles size={22} className="text-purple-500" /> 技能
+          <Sparkles size={22} className="text-hermes" /> 技能
         </h1>
 
         {selected ? (

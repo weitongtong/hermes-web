@@ -38,6 +38,7 @@ export default function MarkdownRenderer({ content, className }) {
       'prose-headings:text-warm-text prose-p:text-warm-secondary prose-strong:text-warm-text',
       'prose-code:before:content-none prose-code:after:content-none',
       'prose-li:text-warm-secondary prose-blockquote:text-warm-secondary prose-blockquote:border-hermes/30',
+      '[&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0',
       className
     )}>
       <ReactMarkdown

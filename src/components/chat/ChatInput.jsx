@@ -1,10 +1,18 @@
-import { useState, useRef, useCallback } from 'react';
-import { SendHorizonal, Square } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { ArrowUp, Square } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 export default function ChatInput({ onSend, isStreaming, onStop }) {
   const [value, setValue] = useState('');
   const textareaRef = useRef(null);
+  const prevStreamingRef = useRef(isStreaming);
+
+  useEffect(() => {
+    if (prevStreamingRef.current && !isStreaming) {
+      textareaRef.current?.focus();
+    }
+    prevStreamingRef.current = isStreaming;
+  }, [isStreaming]);
 
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
@@ -25,54 +33,61 @@ export default function ChatInput({ onSend, isStreaming, onStop }) {
     const el = textareaRef.current;
     if (el) {
       el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+      el.style.height = Math.min(el.scrollHeight, 180) + 'px';
     }
   };
 
+  const canSend = value.trim().length > 0;
+
   return (
-    <div className="relative bg-surface/80 backdrop-blur-sm px-4 pb-4 pt-3">
-      <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-surface to-transparent" />
-      <div className="flex items-end gap-2.5 max-w-3xl mx-auto">
-        <div className="flex-1 relative">
+    <div className="bg-white border-t border-warm-border/30 px-4 pb-5 pt-3">
+      <div className="max-w-3xl mx-auto">
+        <div className={cn(
+          'relative rounded-2xl border bg-surface/50 transition-all duration-200',
+          'focus-within:bg-white focus-within:shadow-float focus-within:border-warm-border/60',
+          isStreaming ? 'border-hermes/20 bg-hermes/[0.02]' : 'border-warm-border/50',
+        )}>
           <textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onInput={handleInput}
-            placeholder="输入消息...（Shift+Enter 换行）"
+            placeholder="给 Hermes 发消息..."
             rows={1}
-            className={cn(
-              'w-full resize-none rounded-2xl border border-warm-border bg-white px-4 py-3 pr-12',
-              'text-sm text-warm-text placeholder:text-warm-muted',
-              'focus:outline-none focus:border-hermes/40 focus:ring-2 focus:ring-hermes/10',
-              'scrollbar-thin transition-all duration-200'
-            )}
+            className="w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm text-warm-text placeholder:text-warm-muted/70 focus:outline-none scrollbar-thin leading-relaxed"
           />
-        </div>
-        {isStreaming ? (
-          <button
-            onClick={onStop}
-            className="shrink-0 w-10 h-10 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors duration-200 flex items-center justify-center"
-            title="停止"
-          >
-            <Square size={16} />
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            disabled={!value.trim()}
-            className={cn(
-              'shrink-0 w-10 h-10 rounded-xl transition-all duration-200 flex items-center justify-center',
-              value.trim()
-                ? 'bg-gradient-to-br from-hermes to-hermes-dark text-white shadow-warm hover:shadow-warm-lg hover:scale-[1.03] active:scale-95'
-                : 'bg-surface-overlay text-warm-muted cursor-not-allowed'
+
+          <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
+            {isStreaming ? (
+              <button
+                onClick={onStop}
+                className="w-8 h-8 rounded-xl bg-warm-text hover:bg-warm-text/80 text-white flex items-center justify-center transition-colors duration-150"
+                title="停止生成"
+              >
+                <Square size={12} fill="currentColor" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={!canSend}
+                className={cn(
+                  'w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200',
+                  canSend
+                    ? 'bg-warm-text text-white hover:bg-warm-text/80 active:scale-90'
+                    : 'bg-surface-overlay text-warm-muted/50 cursor-not-allowed',
+                )}
+                title="发送消息"
+              >
+                <ArrowUp size={15} strokeWidth={2.5} />
+              </button>
             )}
-            title="发送"
-          >
-            <SendHorizonal size={16} />
-          </button>
-        )}
+          </div>
+        </div>
+
+        <p className="text-[10px] text-warm-muted/50 text-center mt-2.5 select-none">
+          Enter 发送 · Shift + Enter 换行
+        </p>
       </div>
     </div>
   );

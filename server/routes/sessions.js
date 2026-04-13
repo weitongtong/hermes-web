@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const source = req.query.source || '';
 
-    let sql = 'SELECT id, source, model, title, message_count, started_at, ended_at FROM sessions';
+    let sql = 'SELECT id, source, model, title, message_count, started_at, ended_at, input_tokens, output_tokens, estimated_cost_usd FROM sessions';
     const params = [];
 
     if (source) {

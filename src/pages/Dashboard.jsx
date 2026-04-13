@@ -1,7 +1,7 @@
 import { useStatus, useSessions, useJobs } from '@/hooks/useHermesAPI';
 import {
   Cpu, Wifi, WifiOff, Brain, Sparkles, MessageSquare,
-  Activity, Server, Timer,
+  Activity, Server, Timer, LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -78,7 +78,9 @@ export default function Dashboard() {
     <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
       <div className="max-w-5xl mx-auto p-6 space-y-6">
         <div className="animate-fade-in">
-          <h1 className="text-2xl font-semibold text-warm-text">仪表盘</h1>
+          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
+            <LayoutDashboard size={22} className="text-hermes" /> 仪表盘
+          </h1>
           <p className="text-sm text-warm-muted mt-1">Hermes Agent 系统状态概览</p>
         </div>
 
