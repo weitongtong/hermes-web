@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ async function proxy(res, url, options = {}) {
     res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
     res.send(body);
   } catch (err) {
+    logger.error('jobs', `Upstream proxy failed: ${url}`, err);
     res.status(502).json({ error: `Cannot connect to Hermes API: ${err.message}` });
   }
 }

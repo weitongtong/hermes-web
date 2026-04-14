@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fs from 'fs';
 import { hermesPath } from '../utils/hermes-paths.js';
 import { readYaml } from '../utils/yaml-helper.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -61,6 +62,7 @@ router.get('/', (_req, res) => {
       hermesHome: hermesPath(),
     });
   } catch (err) {
+    logger.error('status', 'Failed to build status', err);
     res.status(500).json({ error: err.message });
   }
 });

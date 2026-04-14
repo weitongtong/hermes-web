@@ -2,12 +2,16 @@ import { Router } from 'express';
 import fs from 'fs';
 import Database from 'better-sqlite3';
 import { hermesPath } from '../utils/hermes-paths.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
 function getDb() {
   const dbPath = hermesPath('state.db');
-  if (!fs.existsSync(dbPath)) return null;
+  if (!fs.existsSync(dbPath)) {
+    logger.warn('sessions', 'state.db not found');
+    return null;
+  }
   return new Database(dbPath);
 }
 
@@ -33,6 +37,7 @@ router.get('/', (req, res) => {
     db.close();
     res.json(sessions);
   } catch (err) {
+    logger.error('sessions', 'Failed to list sessions', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -61,6 +66,7 @@ router.get('/search', (req, res) => {
     db.close();
     res.json(results);
   } catch (err) {
+    logger.error('sessions', `FTS search failed for "${req.query.q}"`, err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -77,6 +83,7 @@ router.get('/:id', (req, res) => {
     db.close();
     res.json({ session, messages });
   } catch (err) {
+    logger.error('sessions', `Failed to get session ${req.params.id}`, err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -97,8 +104,10 @@ router.delete('/:id', (req, res) => {
 
     deleteSession(req.params.id);
     db.close();
+    logger.info('sessions', `Deleted session ${req.params.id}`);
     res.json({ ok: true });
   } catch (err) {
+    logger.error('sessions', `Failed to delete session ${req.params.id}`, err);
     res.status(500).json({ error: err.message });
   }
 });

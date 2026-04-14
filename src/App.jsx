@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Chat from './pages/Chat';
 import Dashboard from './pages/Dashboard';
-import Sessions from './pages/Sessions';
 import Memory from './pages/Memory';
 import Skills from './pages/Skills';
 import Settings from './pages/Settings';
@@ -15,7 +14,6 @@ export default function App() {
         <Route path="/" element={<Navigate to="/chat" replace />} />
         <Route path="/chat/:sessionId?" element={<Chat />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/sessions" element={<Sessions />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/memory" element={<Memory />} />
         <Route path="/skills" element={<Skills />} />

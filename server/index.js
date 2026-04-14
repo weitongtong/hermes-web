@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from './utils/logger.js';
 
 import chatRouter from './routes/chat.js';
 import sessionsRouter from './routes/sessions.js';
@@ -18,6 +20,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+app.use(morgan('dev'));
 
 app.use('/api', chatRouter);
 app.use('/api', configRouter);
@@ -33,6 +36,13 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(distPath));
   app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
 }
+
+app.use((err, _req, res, _next) => {
+  logger.error('server', `Unhandled error`, err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Hermes Web server running on http://localhost:${PORT}`);

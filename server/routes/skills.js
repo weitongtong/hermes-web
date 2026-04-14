@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { hermesPath } from '../utils/hermes-paths.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.get('/', (_req, res) => {
     const skills = walkSkills(hermesPath('skills'));
     res.json(skills);
   } catch (err) {
+    logger.error('skills', 'Failed to list skills', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -56,6 +58,7 @@ router.get('/:name', (req, res) => {
     const { data: frontmatter, content } = matter(raw);
     res.json({ ...skill, frontmatter, content });
   } catch (err) {
+    logger.error('skills', `Failed to get skill "${req.params.name}"`, err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -80,6 +83,7 @@ router.get('/:name/files', (req, res) => {
     walk(skill.path);
     res.json(files);
   } catch (err) {
+    logger.error('skills', `Failed to list files for skill "${req.params.name}"`, err);
     res.status(500).json({ error: err.message });
   }
 });

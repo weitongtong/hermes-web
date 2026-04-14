@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -21,11 +22,15 @@ router.post('/chat', async (req, res) => {
 
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => '');
+      logger.warn('chat', `Upstream ${upstream.status}: ${errText || 'no body'}`);
       return res.status(upstream.status).send(errText || 'Hermes API error');
     }
 
     const sessionId = upstream.headers.get('x-hermes-session-id');
-    if (sessionId) res.setHeader('X-Hermes-Session-Id', sessionId);
+    if (sessionId) {
+      res.setHeader('X-Hermes-Session-Id', sessionId);
+      logger.info('chat', `Session: ${sessionId}`);
+    }
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -43,6 +48,7 @@ router.post('/chat', async (req, res) => {
     req.on('close', () => reader.cancel());
     await pump();
   } catch (err) {
+    logger.error('chat', `Upstream connection failed (${HERMES_API})`, err);
     if (!res.headersSent) {
       res.status(502).json({ error: `Cannot connect to Hermes API at ${HERMES_API}: ${err.message}` });
     }
@@ -57,6 +63,7 @@ router.get('/models', async (_req, res) => {
     const data = await upstream.json();
     res.json(data);
   } catch (err) {
+    logger.error('chat', `Failed to fetch models from ${HERMES_API}`, err);
     res.status(502).json({ error: `Cannot connect to Hermes API: ${err.message}` });
   }
 });

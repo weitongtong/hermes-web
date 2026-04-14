@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Search, X } from 'lucide-react';
-import { useSessions, useDeleteSession } from '@/hooks/useHermesAPI';
+import { useSessions, useDeleteSession, useSessionSearch } from '@/hooks/useHermesAPI';
 import { cn } from '@/lib/cn';
 import SessionItem from './SessionItem';
 
@@ -29,35 +29,96 @@ function groupByDate(sessions) {
   ].filter((g) => g.items.length > 0);
 }
 
-export default function SessionList({ onNewChat }) {
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+function groupSearchResults(results) {
+  const map = new Map();
+  for (const r of results) {
+    if (!map.has(r.session_id)) {
+      map.set(r.session_id, { session_id: r.session_id, title: r.title, model: r.model, snippets: [] });
+    }
+    map.get(r.session_id).snippets.push(r.snippet);
+  }
+  return [...map.values()];
+}
+
+function highlightSnippet(snippet) {
+  return (snippet || '')
+    .replace(/>>>/g, '<mark class="bg-hermes/15 text-hermes-dark rounded px-px">')
+    .replace(/<<</g, '</mark>');
+}
+
+function SearchResultItem({ result, isActive, onSelect }) {
+  const bestSnippet = result.snippets[0] || '';
+  return (
+    <button
+      onClick={() => onSelect(result.session_id)}
+      className={cn(
+        'w-full text-left px-3 py-2 rounded-lg transition-all duration-150 group relative',
+        isActive ? 'bg-black/[0.025]' : 'hover:bg-black/[0.02]',
+      )}
+    >
+      {isActive && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-hermes" />
+      )}
+      <div className="text-[13px] truncate pr-2 leading-snug text-warm-text">
+        {result.title || result.session_id}
+      </div>
+      <p
+        className="mt-0.5 text-[11px] text-warm-muted line-clamp-2 leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: highlightSnippet(bestSnippet) }}
+      />
+      {result.snippets.length > 1 && (
+        <span className="text-[10px] text-warm-muted/60 mt-0.5 inline-block">
+          +{result.snippets.length - 1} 条匹配
+        </span>
+      )}
+    </button>
+  );
+}
+
+export default function SessionList() {
   const [search, setSearch] = useState('');
-  const { sessionId: activeId } = useParams();
+  const { pathname } = useLocation();
+  const activeId = pathname.startsWith('/chat/') ? decodeURIComponent(pathname.slice(6)) : null;
   const navigate = useNavigate();
   const { data: sessions, isLoading, isError, error } = useSessions(50);
   const deleteSession = useDeleteSession();
+
+  const useFts = search.length > 2;
+  const debouncedSearch = useDebounce(useFts ? search : '', 300);
+  const { data: searchResults, isFetching: isFtsLoading } = useSessionSearch(debouncedSearch);
 
   const handleSelect = (id) => navigate(`/chat/${encodeURIComponent(id)}`);
 
   const handleDelete = (id) => {
     deleteSession.mutate(id, {
       onSuccess: () => {
-        if (activeId === id) onNewChat?.();
+        if (activeId === id) navigate('/chat');
       },
     });
   };
 
-  const filtered = search
+  const localFiltered = (search && !useFts)
     ? sessions?.filter((s) => (s.title || s.id).toLowerCase().includes(search.toLowerCase()))
-    : sessions;
+    : (!search ? sessions : null);
 
-  const groups = filtered ? groupByDate(filtered) : [];
+  const groups = localFiltered ? groupByDate(localFiltered) : [];
+  const ftsGroups = (useFts && searchResults) ? groupSearchResults(searchResults) : null;
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <span className="text-xs font-semibold text-warm-muted uppercase tracking-wider">对话</span>
         <button
-          onClick={onNewChat}
+          onClick={() => navigate('/chat')}
           className="p-1 rounded-md text-warm-muted hover:text-hermes hover:bg-hermes/6 transition-colors duration-150"
           title="新建对话"
         >
@@ -98,6 +159,32 @@ export default function SessionList({ onNewChat }) {
             <p className="text-red-400 font-medium">加载失败</p>
             <p className="text-warm-muted mt-1 break-all">{error?.message || '未知错误'}</p>
           </div>
+        ) : useFts ? (
+          isFtsLoading || (debouncedSearch !== search) ? (
+            <div className="space-y-2 px-2 pt-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-14 rounded-xl bg-surface-overlay/40 animate-shimmer" />
+              ))}
+            </div>
+          ) : !ftsGroups?.length ? (
+            <div className="flex flex-col items-center justify-center py-12 text-warm-muted">
+              <p className="text-xs">没有匹配的对话</p>
+            </div>
+          ) : (
+            <div className="space-y-px">
+              <p className="px-3 pt-1 pb-2 text-[10px] text-warm-muted/60">
+                {searchResults.length} 条匹配 · {ftsGroups.length} 个会话
+              </p>
+              {ftsGroups.map((r) => (
+                <SearchResultItem
+                  key={r.session_id}
+                  result={r}
+                  isActive={activeId === r.session_id}
+                  onSelect={handleSelect}
+                />
+              ))}
+            </div>
+          )
         ) : groups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-warm-muted">
             <p className="text-xs">{search ? '没有匹配的对话' : '暂无对话'}</p>

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fs from 'fs';
 import { hermesPath } from '../utils/hermes-paths.js';
 import { readYaml, writeYaml, mergeDeep } from '../utils/yaml-helper.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -10,6 +11,7 @@ router.get('/config', (_req, res) => {
     const config = readYaml(hermesPath('config.yaml'));
     res.json(config);
   } catch (err) {
+    logger.error('config', 'Failed to read config.yaml', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -20,8 +22,10 @@ router.patch('/config', (req, res) => {
     const config = readYaml(configPath);
     mergeDeep(config, req.body);
     writeYaml(configPath, config);
+    logger.info('config', 'Config updated');
     res.json({ success: true, message: 'Config saved. Restart hermes gateway to apply changes.' });
   } catch (err) {
+    logger.error('config', 'Failed to save config.yaml', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -46,6 +50,7 @@ router.get('/env', (_req, res) => {
     }
     res.json(entries);
   } catch (err) {
+    logger.error('config', 'Failed to read .env', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -77,8 +82,10 @@ router.put('/env/:key', (req, res) => {
     if (!found) lines.push(`${key}=${value}`);
 
     fs.writeFileSync(envPath, lines.join('\n'), 'utf-8');
+    logger.info('config', `Env key "${key}" updated`);
     res.json({ success: true, message: 'Env updated. Restart hermes gateway to apply changes.' });
   } catch (err) {
+    logger.error('config', `Failed to update env key "${req.params.key}"`, err);
     res.status(500).json({ error: err.message });
   }
 });

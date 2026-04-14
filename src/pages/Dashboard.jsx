@@ -1,6 +1,6 @@
-import { useStatus, useSessions, useJobs } from '@/hooks/useHermesAPI';
+import { useStatus, useJobs } from '@/hooks/useHermesAPI';
 import {
-  Cpu, Wifi, WifiOff, Brain, Sparkles, MessageSquare,
+  Cpu, Wifi, WifiOff, Brain, Sparkles,
   Activity, Server, Timer, LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -56,7 +56,6 @@ function UsageBar({ label, current, limit, unit = '字符' }) {
 
 export default function Dashboard() {
   const { data: status, isLoading } = useStatus();
-  const { data: sessions } = useSessions(5);
   const { data: jobsData } = useJobs();
 
   if (isLoading) {
@@ -123,24 +122,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-warm animate-fade-in-up" style={{ animationDelay: '350ms' }}>
-          <h2 className="text-sm font-medium text-warm-text mb-3">最近会话</h2>
-          {!sessions?.length ? (
-            <p className="text-xs text-warm-muted">暂无会话</p>
-          ) : (
-            <div className="space-y-0.5">
-              {sessions.map((s) => (
-                <div key={s.id} className="flex items-center gap-3 text-sm px-3 py-2.5 rounded-xl hover:bg-surface-overlay/60 transition-colors duration-200">
-                  <MessageSquare size={14} className="text-warm-muted shrink-0" />
-                  <span className="text-warm-text truncate flex-1">{s.title || s.id}</span>
-                  <span className="text-xs text-warm-muted shrink-0">
-                    {s.started_at ? new Date(s.started_at).toLocaleString('zh-CN') : ''}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

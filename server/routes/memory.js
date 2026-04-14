@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs';
 import { hermesPath } from '../utils/hermes-paths.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 const ENTRY_DELIMITER = '\n§\n';
@@ -28,6 +29,7 @@ router.get('/:target', (req, res) => {
       charLimit: CHAR_LIMITS[target],
     });
   } catch (err) {
+    logger.error('memory', `Failed to read ${req.params.target}`, err);
     res.status(500).json({ error: err.message });
   }
 });
