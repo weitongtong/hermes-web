@@ -1,62 +1,75 @@
+import {
+  ArrowLeftOutlined,
+  ClockCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  InfoCircleOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Descriptions,
+  Empty,
+  Input,
+  InputNumber,
+  Radio,
+  Segmented,
+  Select,
+  Skeleton,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import { useState } from 'react';
 import {
-  useJobs, useCreateJob, useUpdateJob, useDeleteJob,
-  usePauseJob, useResumeJob, useRunJob, useChannels, useStatus,
+  useChannels,
+  useCreateJob,
+  useDeleteJob,
+  useJobs,
+  usePauseJob,
+  useResumeJob,
+  useRunJob,
+  useStatus,
+  useUpdateJob,
 } from '@/hooks/useHermesAPI';
-import {
-  Timer, Plus, Play, Pause, Trash2, Pencil, ChevronLeft,
-  Search, AlertTriangle, Clock, CalendarClock, Info,
-} from 'lucide-react';
-import { cn } from '@/lib/cn';
+
+const { TextArea } = Input;
 
 const STATE_MAP = {
-  scheduled: { label: '已调度', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  paused:    { label: '已暂停', cls: 'bg-surface-overlay text-warm-secondary border-warm-border' },
-  running:   { label: '运行中', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  completed: { label: '已完成', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
-  error:     { label: '错误',   cls: 'bg-red-50 text-red-600 border-red-200' },
+  scheduled: { label: '已调度', color: 'success' },
+  paused: { label: '已暂停', color: 'default' },
+  running: { label: '运行中', color: 'processing' },
+  completed: { label: '已完成', color: 'purple' },
+  error: { label: '错误', color: 'error' },
 };
-
-function StateBadge({ state }) {
-  const s = STATE_MAP[state] || { label: state, cls: 'bg-surface-overlay text-warm-secondary border-warm-border' };
-  return (
-    <span className={cn('inline-block text-[11px] font-medium px-2.5 py-0.5 rounded-full border', s.cls)}>
-      {s.label}
-    </span>
-  );
-}
-
-function formatTime(iso) {
-  if (!iso) return '-';
-  return new Date(iso).toLocaleString('zh-CN');
-}
-
-function ConfirmDialog({ title, message, onConfirm, onCancel }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl p-6 shadow-warm-lg max-w-sm w-full mx-4 space-y-4 animate-scale-in">
-        <h3 className="text-sm font-semibold text-warm-text">{title}</h3>
-        <p className="text-xs text-warm-secondary">{message}</p>
-        <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className="px-3 py-1.5 text-xs text-warm-secondary hover:text-warm-text rounded-xl hover:bg-surface-overlay transition-colors duration-200">
-            取消
-          </button>
-          <button onClick={onConfirm} className="px-3 py-1.5 text-xs text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors duration-200">
-            确认
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const PLATFORM_LABELS = {
-  local: '本地', origin: '来源平台', feishu: '飞书', telegram: 'Telegram',
-  discord: 'Discord', slack: 'Slack', wecom: '企业微信', dingtalk: '钉钉',
-  matrix: 'Matrix', email: '邮件', webhook: 'Webhook',
+  local: '本地',
+  origin: '来源平台',
+  feishu: '飞书',
+  telegram: 'Telegram',
+  discord: 'Discord',
+  slack: 'Slack',
+  wecom: '企业微信',
+  dingtalk: '钉钉',
+  matrix: 'Matrix',
+  email: '邮件',
+  webhook: 'Webhook',
 };
 
-const CHANNEL_TYPE_LABELS = { group: '群组', dm: '私聊', channel: '频道', user: '用户' };
+const CHANNEL_TYPE_LABELS = {
+  group: '群组',
+  dm: '私聊',
+  channel: '频道',
+  user: '用户',
+};
 
 const CRON_PRESETS = [
   { label: '每小时', value: '0 * * * *' },
@@ -71,9 +84,41 @@ const UNIT_OPTIONS = [
   { value: 'd', label: '天' },
 ];
 
+function StateBadge({ state }) {
+  const item = STATE_MAP[state] || { label: state, color: 'default' };
+  return <Tag color={item.color}>{item.label}</Tag>;
+}
+
+function formatTime(iso) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleString('zh-CN');
+}
+
+function formatDeliverTarget(deliver) {
+  if (!deliver || deliver === 'local') return PLATFORM_LABELS.local;
+  const idx = deliver.indexOf(':');
+  if (idx > 0) {
+    const platform = deliver.slice(0, idx);
+    const channel = deliver.slice(idx + 1);
+    return `${PLATFORM_LABELS[platform] || platform} · ${channel}`;
+  }
+  return PLATFORM_LABELS[deliver] || deliver;
+}
+
 function initScheduleFromJob(schedule) {
-  const base = { tab: 'once', onceMode: 'delay', delayNum: '', delayUnit: 'm', datetime: '', intervalNum: '', intervalUnit: 'm', cronExpr: '' };
+  const base = {
+    tab: 'once',
+    onceMode: 'delay',
+    delayNum: null,
+    delayUnit: 'm',
+    datetime: '',
+    intervalNum: null,
+    intervalUnit: 'm',
+    cronExpr: '',
+  };
+
   if (!schedule || typeof schedule !== 'object' || !schedule.kind) return base;
+
   if (schedule.kind === 'once' && schedule.run_at) {
     const runAt = new Date(schedule.run_at);
     if (runAt > new Date()) {
@@ -82,15 +127,18 @@ function initScheduleFromJob(schedule) {
     }
     return base;
   }
+
   if (schedule.kind === 'interval' && schedule.minutes) {
-    const m = schedule.minutes;
-    if (m % 1440 === 0) return { ...base, tab: 'interval', intervalNum: String(m / 1440), intervalUnit: 'd' };
-    if (m % 60 === 0) return { ...base, tab: 'interval', intervalNum: String(m / 60), intervalUnit: 'h' };
-    return { ...base, tab: 'interval', intervalNum: String(m), intervalUnit: 'm' };
+    const minutes = schedule.minutes;
+    if (minutes % 1440 === 0) return { ...base, tab: 'interval', intervalNum: minutes / 1440, intervalUnit: 'd' };
+    if (minutes % 60 === 0) return { ...base, tab: 'interval', intervalNum: minutes / 60, intervalUnit: 'h' };
+    return { ...base, tab: 'interval', intervalNum: minutes, intervalUnit: 'm' };
   }
+
   if (schedule.kind === 'cron' && schedule.expr) {
     return { ...base, tab: 'cron', cronExpr: schedule.expr };
   }
+
   return base;
 }
 
@@ -101,16 +149,37 @@ function initDeliverFromJob(deliver) {
   return { platform: deliver, channel: '' };
 }
 
+function PageShell({ title, extra, children }) {
+  return (
+    <div className="h-full overflow-y-auto bg-surface">
+      <div className="mx-auto max-w-5xl p-6">
+        <Space direction="vertical" size={20} className="w-full">
+          <div className="flex items-start justify-between gap-4">
+            <Space align="center" size={12}>
+              <ClockCircleOutlined className="text-[22px] text-hermes" />
+              <Typography.Title level={2} className="!mb-0">
+                {title}
+              </Typography.Title>
+            </Space>
+            {extra}
+          </div>
+          {children}
+        </Space>
+      </div>
+    </div>
+  );
+}
+
 function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
   const { data: channelsData } = useChannels();
   const { data: statusData } = useStatus();
 
   const sched = initScheduleFromJob(job?.schedule);
-  const deliv = initDeliverFromJob(job?.deliver);
+  const deliver = initDeliverFromJob(job?.deliver);
 
   const [name, setName] = useState(job?.name || '');
   const [prompt, setPrompt] = useState(job?.prompt || '');
-  const [repeat, setRepeat] = useState(job?.repeat?.times != null ? String(job.repeat.times) : '');
+  const [repeat, setRepeat] = useState(job?.repeat?.times ?? null);
   const [model, setModel] = useState(job?.model || '');
 
   const [scheduleTab, setScheduleTab] = useState(sched.tab);
@@ -122,8 +191,8 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
   const [intervalUnit, setIntervalUnit] = useState(sched.intervalUnit);
   const [cronExpr, setCronExpr] = useState(sched.cronExpr);
 
-  const [platform, setPlatform] = useState(deliv.platform);
-  const [channel, setChannel] = useState(deliv.channel);
+  const [platform, setPlatform] = useState(deliver.platform);
+  const [channel, setChannel] = useState(deliver.channel);
   const [showDeliverHelp, setShowDeliverHelp] = useState(false);
 
   const platforms = channelsData?.platforms || {};
@@ -131,7 +200,7 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
   const availablePlatforms = platform !== 'local' && !platformKeys.includes(platform)
     ? [platform, ...platformKeys]
     : platformKeys;
-  const selectedChannels = platform !== 'local' ? (platforms[platform] || []) : [];
+  const selectedChannels = platform !== 'local' ? platforms[platform] || [] : [];
   const hasChannelList = selectedChannels.length > 0;
   const defaultModel = statusData?.model?.default || '';
 
@@ -140,7 +209,7 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
       return onceMode === 'datetime' ? datetime : `${delayNum}${delayUnit}`;
     }
     if (scheduleTab === 'interval') return `every ${intervalNum}${intervalUnit}`;
-    return cronExpr;
+    return cronExpr.trim();
   };
 
   const buildDeliver = () => {
@@ -154,356 +223,399 @@ function JobForm({ job, onSubmit, onCancel, isSubmitting }) {
     return !!cronExpr.trim();
   };
 
+  const canSubmit = name.trim() && prompt.trim() && isScheduleValid();
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = { name, prompt, schedule: buildSchedule() };
-    if (repeat) data.repeat = parseInt(repeat, 10) || undefined;
-    const d = buildDeliver();
-    if (d) data.deliver = d;
-    if (model) data.model = model;
+    const data = { name: name.trim(), prompt: prompt.trim(), schedule: buildSchedule() };
+    if (repeat) data.repeat = repeat;
+    const deliverTarget = buildDeliver();
+    if (deliverTarget) data.deliver = deliverTarget;
+    if (model.trim()) data.model = model.trim();
     onSubmit(data);
   };
 
-  const inputCls = 'w-full bg-white border border-warm-border rounded-xl px-3 py-2 text-sm text-warm-text focus:outline-none focus:border-hermes/40 focus:ring-1 focus:ring-hermes/15 transition-all duration-200';
-  const tabCls = (active) => cn(
-    'px-3 py-1.5 text-xs font-medium rounded-xl transition-all duration-200',
-    active ? 'bg-hermes/8 text-hermes-dark' : 'text-warm-muted hover:text-warm-secondary hover:bg-surface-overlay'
-  );
+  const channelOptions = selectedChannels.map((item) => ({
+    value: item.id,
+    label: `${item.name} (${CHANNEL_TYPE_LABELS[item.type] || item.type})`,
+  }));
+  if (channel && !selectedChannels.some((item) => item.id === channel)) {
+    channelOptions.unshift({ value: channel, label: `${channel}（未知频道）` });
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 shadow-warm space-y-4">
-      <div>
-        <label className="text-xs text-warm-muted block mb-1">名称 *</label>
-        <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="例如：每日新闻摘要" />
-      </div>
+    <form onSubmit={handleSubmit}>
+      <Card bordered={false} className="shadow-warm">
+        <Space direction="vertical" size={20} className="w-full">
+          <div>
+            <Typography.Text type="secondary" className="mb-2 block text-[12px]">
+              名称 *
+            </Typography.Text>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：每日新闻摘要" />
+          </div>
 
-      <div>
-        <label className="text-xs text-warm-muted block mb-1">提示词 *</label>
-        <textarea required value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} className={cn(inputCls, 'resize-none')} placeholder="Agent 每次执行时收到的指令" />
-      </div>
+          <div>
+            <Typography.Text type="secondary" className="mb-2 block text-[12px]">
+              提示词 *
+            </Typography.Text>
+            <TextArea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={4}
+              placeholder="Agent 每次执行时收到的指令"
+            />
+          </div>
 
-      <div>
-        <label className="text-xs text-warm-muted block mb-1.5">调度模式 *</label>
-        <div className="flex gap-1 mb-3">
-          {[
-            { key: 'once', label: '一次性' },
-            { key: 'interval', label: '定间隔' },
-            { key: 'cron', label: 'Cron 表达式' },
-          ].map((t) => (
-            <button key={t.key} type="button" onClick={() => setScheduleTab(t.key)} className={tabCls(scheduleTab === t.key)}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+          <div>
+            <Typography.Text type="secondary" className="mb-3 block text-[12px]">
+              调度模式 *
+            </Typography.Text>
+            <Space direction="vertical" size={12} className="w-full">
+              <Segmented
+                block
+                options={[
+                  { label: '一次性', value: 'once' },
+                  { label: '定间隔', value: 'interval' },
+                  { label: 'Cron 表达式', value: 'cron' },
+                ]}
+                value={scheduleTab}
+                onChange={setScheduleTab}
+              />
 
-        {scheduleTab === 'once' && (
-          <div className="space-y-2">
-            <div className="flex gap-3">
-              <label className="flex items-center gap-1.5 text-xs text-warm-secondary cursor-pointer">
-                <input type="radio" name="onceMode" checked={onceMode === 'delay'} onChange={() => setOnceMode('delay')} className="accent-hermes" />
-                延迟执行
-              </label>
-              <label className="flex items-center gap-1.5 text-xs text-warm-secondary cursor-pointer">
-                <input type="radio" name="onceMode" checked={onceMode === 'datetime'} onChange={() => setOnceMode('datetime')} className="accent-hermes" />
-                指定时间
-              </label>
+              {scheduleTab === 'once' ? (
+                <Space direction="vertical" size={12} className="w-full">
+                  <Radio.Group
+                    value={onceMode}
+                    onChange={(e) => setOnceMode(e.target.value)}
+                    options={[
+                      { label: '延迟执行', value: 'delay' },
+                      { label: '指定时间', value: 'datetime' },
+                    ]}
+                  />
+
+                  {onceMode === 'delay' ? (
+                    <Space.Compact className="w-full">
+                      <InputNumber
+                        min={1}
+                        value={delayNum}
+                        onChange={setDelayNum}
+                        controls={false}
+                        placeholder="数值"
+                        className="w-full"
+                      />
+                      <Select
+                        value={delayUnit}
+                        onChange={setDelayUnit}
+                        options={UNIT_OPTIONS}
+                        className="min-w-[110px]"
+                      />
+                    </Space.Compact>
+                  ) : (
+                    <Input type="datetime-local" value={datetime} onChange={(e) => setDatetime(e.target.value)} />
+                  )}
+                </Space>
+              ) : null}
+
+              {scheduleTab === 'interval' ? (
+                <Space.Compact className="w-full">
+                  <InputNumber
+                    min={1}
+                    value={intervalNum}
+                    onChange={setIntervalNum}
+                    controls={false}
+                    placeholder="间隔数值"
+                    className="w-full"
+                  />
+                  <Select
+                    value={intervalUnit}
+                    onChange={setIntervalUnit}
+                    options={UNIT_OPTIONS}
+                    className="min-w-[110px]"
+                  />
+                </Space.Compact>
+              ) : null}
+
+              {scheduleTab === 'cron' ? (
+                <Space direction="vertical" size={12} className="w-full">
+                  <Input
+                    value={cronExpr}
+                    onChange={(e) => setCronExpr(e.target.value)}
+                    placeholder="0 9 * * *"
+                  />
+                  <Space wrap size={[8, 8]}>
+                    {CRON_PRESETS.map((preset) => (
+                      <Button key={preset.value} size="small" onClick={() => setCronExpr(preset.value)}>
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </Space>
+                </Space>
+              ) : null}
+            </Space>
+          </div>
+
+          {scheduleTab !== 'once' ? (
+            <div>
+              <Typography.Text type="secondary" className="mb-2 block text-[12px]">
+                重复次数
+              </Typography.Text>
+              <InputNumber
+                min={1}
+                value={repeat}
+                onChange={setRepeat}
+                controls={false}
+                placeholder="留空 = 无限"
+                className="w-full"
+              />
             </div>
-            {onceMode === 'delay' ? (
-              <div className="flex gap-2">
-                <input type="number" min="1" value={delayNum} onChange={(e) => setDelayNum(e.target.value)} className={cn(inputCls, 'flex-1')} placeholder="数值" />
-                <select value={delayUnit} onChange={(e) => setDelayUnit(e.target.value)} className={cn(inputCls, 'w-24')}>
-                  {UNIT_OPTIONS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
-                </select>
-              </div>
-            ) : (
-              <input type="datetime-local" value={datetime} onChange={(e) => setDatetime(e.target.value)} className={inputCls} />
-            )}
+          ) : null}
+
+          <div>
+            <Space align="center" size={8} className="mb-2">
+              <Typography.Text type="secondary" className="text-[12px]">
+                投递目标
+              </Typography.Text>
+              <Button
+                type="text"
+                size="small"
+                icon={<InfoCircleOutlined />}
+                onClick={() => setShowDeliverHelp((value) => !value)}
+              />
+            </Space>
+
+            {showDeliverHelp ? (
+              <Alert
+                type="info"
+                showIcon
+                className="mb-3"
+                message="任务执行完成后，结果会投递到这里"
+                description="留空频道时使用平台默认频道；选择“本地”则只保存在本地，不发送到平台。"
+              />
+            ) : null}
+
+            <Space direction="vertical" size={12} className="w-full">
+              <Select
+                value={platform}
+                onChange={(value) => {
+                  setPlatform(value);
+                  setChannel('');
+                }}
+                options={[
+                  { value: 'local', label: PLATFORM_LABELS.local },
+                  ...availablePlatforms.map((key) => ({
+                    value: key,
+                    label: PLATFORM_LABELS[key] || key,
+                  })),
+                ]}
+              />
+
+              {platform !== 'local' ? (
+                hasChannelList ? (
+                  <Select
+                    value={channel || undefined}
+                    onChange={setChannel}
+                    options={[{ value: '', label: '默认频道' }, ...channelOptions]}
+                    placeholder="选择频道"
+                  />
+                ) : (
+                  <Input
+                    value={channel}
+                    onChange={(e) => setChannel(e.target.value)}
+                    placeholder="频道 ID（留空使用默认）"
+                  />
+                )
+              ) : null}
+            </Space>
           </div>
-        )}
 
-        {scheduleTab === 'interval' && (
-          <div className="flex gap-2">
-            <input type="number" min="1" value={intervalNum} onChange={(e) => setIntervalNum(e.target.value)} className={cn(inputCls, 'flex-1')} placeholder="间隔数值" />
-            <select value={intervalUnit} onChange={(e) => setIntervalUnit(e.target.value)} className={cn(inputCls, 'w-24')}>
-              {UNIT_OPTIONS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
-            </select>
+          <div>
+            <Typography.Text type="secondary" className="mb-2 block text-[12px]">
+              模型
+            </Typography.Text>
+            <Input
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder={defaultModel ? `留空使用默认（${defaultModel}）` : '留空使用默认'}
+            />
           </div>
-        )}
 
-        {scheduleTab === 'cron' && (
-          <div className="space-y-2">
-            <input value={cronExpr} onChange={(e) => setCronExpr(e.target.value)} className={cn(inputCls, 'font-mono')} placeholder="0 9 * * *" />
-            <div className="flex flex-wrap gap-1.5">
-              {CRON_PRESETS.map((p) => (
-                <button key={p.value} type="button" onClick={() => setCronExpr(p.value)}
-                  className="px-2.5 py-1 text-[11px] bg-surface-overlay hover:bg-hermes/8 text-warm-secondary hover:text-hermes-dark rounded-lg transition-colors duration-200">
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {scheduleTab !== 'once' && (
-        <div>
-          <label className="text-xs text-warm-muted block mb-1">重复次数</label>
-          <input value={repeat} onChange={(e) => setRepeat(e.target.value)} type="number" min="1" className={inputCls} placeholder="留空=无限" />
-        </div>
-      )}
-
-      <div>
-        <div className="flex items-center gap-1.5 mb-1">
-          <label className="text-xs text-warm-muted">投递目标</label>
-          <button type="button" onClick={() => setShowDeliverHelp((v) => !v)} className="text-warm-muted hover:text-hermes transition-colors duration-200">
-            <Info size={12} />
-          </button>
-        </div>
-        {showDeliverHelp && (
-          <div className="mb-2 bg-surface-overlay rounded-xl p-3 text-xs text-warm-secondary space-y-1.5 border border-warm-border/60">
-            <p>任务执行完成后，Agent 的输出结果发送到哪里：</p>
-            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-              <span className="text-hermes font-medium">本地</span>
-              <span>仅保存到本地文件，不发送到任何平台</span>
-              <span className="text-hermes font-medium">指定平台</span>
-              <span>发送到对应平台的默认频道（如飞书、Telegram 等）</span>
-              <span className="text-hermes font-medium">平台 + 频道</span>
-              <span>发送到指定平台的特定群组或会话</span>
-            </div>
-            <p className="text-warm-muted">留空频道时使用平台的默认频道（由环境变量配置）</p>
-          </div>
-        )}
-        <div className="flex gap-2">
-          <select value={platform} onChange={(e) => { setPlatform(e.target.value); setChannel(''); }} className={cn(inputCls, 'w-40')}>
-            <option value="local">{PLATFORM_LABELS.local}</option>
-            {availablePlatforms.map((k) => (
-              <option key={k} value={k}>{PLATFORM_LABELS[k] || k}</option>
-            ))}
-          </select>
-          {platform !== 'local' && (
-            hasChannelList ? (
-              <select value={channel} onChange={(e) => setChannel(e.target.value)} className={cn(inputCls, 'flex-1')}>
-                <option value="">默认频道</option>
-                {selectedChannels.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} ({CHANNEL_TYPE_LABELS[c.type] || c.type})</option>
-                ))}
-                {channel && !selectedChannels.some((c) => c.id === channel) && (
-                  <option value={channel}>{channel}（未知频道）</option>
-                )}
-              </select>
-            ) : (
-              <input value={channel} onChange={(e) => setChannel(e.target.value)} className={cn(inputCls, 'flex-1')} placeholder="频道 ID（留空使用默认）" />
-            )
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-xs text-warm-muted block mb-1">模型</label>
-        <input
-          list="model-options" value={model} onChange={(e) => setModel(e.target.value)} className={inputCls}
-          placeholder={defaultModel ? `使用默认（${defaultModel}）` : '使用默认'}
-        />
-        <datalist id="model-options">
-          {defaultModel && <option value={defaultModel}>{defaultModel}（当前默认）</option>}
-        </datalist>
-      </div>
-
-      <div className="flex gap-2 pt-1">
-        <button
-          type="submit" disabled={isSubmitting || !isScheduleValid()}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm bg-hermes/10 text-hermes-dark hover:bg-hermes/15 transition-colors duration-200 disabled:opacity-50 font-medium"
-        >
-          {isSubmitting ? '提交中...' : job ? '保存修改' : '创建任务'}
-        </button>
-        <button
-          type="button" onClick={onCancel}
-          className="px-4 py-2 rounded-xl text-sm text-warm-muted hover:text-warm-text hover:bg-surface-overlay transition-colors duration-200"
-        >
-          取消
-        </button>
-      </div>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={isSubmitting} disabled={!canSubmit}>
+              {job ? '保存修改' : '创建任务'}
+            </Button>
+            <Button onClick={onCancel}>取消</Button>
+          </Space>
+        </Space>
+      </Card>
     </form>
   );
 }
 
 function JobDetail({ job, onBack, onEdit }) {
+  const { message, modal } = App.useApp();
   const pauseMut = usePauseJob();
   const resumeMut = useResumeJob();
   const runMut = useRunJob();
   const deleteMut = useDeleteJob();
-  const [confirm, setConfirm] = useState(null);
 
   const isPaused = job.state === 'paused';
   const isCompleted = job.state === 'completed';
   const repeat = job.repeat || {};
-  const [toast, setToast] = useState(null);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+  const handlePauseResume = () => {
+    const mutation = isPaused ? resumeMut : pauseMut;
+    mutation.mutate(job.id, {
+      onSuccess: () => message.success(isPaused ? '任务已恢复' : '任务已暂停'),
+      onError: (error) => message.error(error?.message || '操作失败'),
+    });
+  };
+
+  const handleRun = () => {
+    modal.confirm({
+      title: isCompleted ? '重新触发任务' : '立即执行任务',
+      content: `确定要${isCompleted ? '重新触发' : '立即执行'}「${job.name}」吗？`,
+      okText: isCompleted ? '重新触发' : '执行',
+      cancelText: '取消',
+      onOk: () =>
+        new Promise((resolve, reject) => {
+          runMut.mutate(job.id, {
+            onSuccess: () => {
+              message.success('任务已触发');
+              resolve();
+            },
+            onError: (error) => {
+              message.error(error?.message || '触发失败');
+              reject(error);
+            },
+          });
+        }),
+    });
+  };
+
+  const handleDelete = () => {
+    modal.confirm({
+      title: '删除任务',
+      content: `确定要删除「${job.name}」吗？此操作不可撤销。`,
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () =>
+        new Promise((resolve, reject) => {
+          deleteMut.mutate(job.id, {
+            onSuccess: () => {
+              message.success('任务已删除');
+              onBack();
+              resolve();
+            },
+            onError: (error) => {
+              message.error(error?.message || '删除失败');
+              reject(error);
+            },
+          });
+        }),
+    });
   };
 
   return (
-    <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-warm-muted hover:text-warm-text transition-colors duration-200">
-        <ChevronLeft size={16} /> 返回列表
-      </button>
+    <Space direction="vertical" size={16} className="w-full">
+      <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBack} className="w-fit !px-0">
+        返回列表
+      </Button>
 
-      {toast && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-xs text-blue-700 animate-fade-in">
-          {toast}
-        </div>
-      )}
+      <Card
+        bordered={false}
+        className="shadow-warm"
+        title={
+          <Space align="center" size={12}>
+            <Typography.Text strong>{job.name}</Typography.Text>
+            <StateBadge state={job.state} />
+          </Space>
+        }
+        extra={<Typography.Text type="secondary" className="font-mono">{job.id}</Typography.Text>}
+      >
+        <Space direction="vertical" size={20} className="w-full">
+          <Card size="small" className="bg-surface-overlay/60">
+            <Typography.Text type="secondary" className="block text-[12px]">
+              提示词
+            </Typography.Text>
+            <Typography.Paragraph className="!mb-0 !mt-2 whitespace-pre-wrap">
+              {job.prompt}
+            </Typography.Paragraph>
+          </Card>
 
-      <div className="bg-white rounded-2xl p-5 shadow-warm space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-warm-text">{job.name}</h2>
-            <p className="text-xs text-warm-muted mt-0.5 font-mono">{job.id}</p>
-          </div>
-          <StateBadge state={job.state} />
-        </div>
+          <Descriptions
+            column={2}
+            items={[
+              { key: 'schedule', label: '调度', children: <Typography.Text code>{job.schedule_display || '-'}</Typography.Text> },
+              { key: 'repeat', label: '重复', children: repeat.times == null ? '无限循环' : `${repeat.completed || 0} / ${repeat.times} 次` },
+              { key: 'next', label: '下次执行', children: formatTime(job.next_run_at) },
+              { key: 'last', label: '上次执行', children: formatTime(job.last_run_at) },
+              { key: 'deliver', label: '投递目标', children: formatDeliverTarget(job.deliver) },
+              { key: 'model', label: '模型', children: job.model || '默认' },
+              { key: 'created', label: '创建时间', children: formatTime(job.created_at) },
+              { key: 'status', label: '上次状态', children: job.last_status || '-' },
+            ]}
+          />
 
-        <div className="bg-surface-overlay/60 rounded-xl p-3 border border-warm-border/50">
-          <p className="text-xs text-warm-muted mb-1">提示词</p>
-          <p className="text-sm text-warm-text whitespace-pre-wrap">{job.prompt}</p>
-        </div>
+          {job.last_error || job.last_delivery_error ? (
+            <Space direction="vertical" className="w-full" size={12}>
+              {job.last_error ? (
+                <Alert type="error" message="执行错误" description={job.last_error} showIcon />
+              ) : null}
+              {job.last_delivery_error ? (
+                <Alert type="error" message="投递错误" description={job.last_delivery_error} showIcon />
+              ) : null}
+            </Space>
+          ) : null}
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-xs text-warm-muted">调度</p>
-            <p className="text-warm-text font-mono">{job.schedule_display || '-'}</p>
-          </div>
-          <div>
-            <p className="text-xs text-warm-muted">重复</p>
-            <p className="text-warm-text">
-              {repeat.times == null ? '无限循环' : `${repeat.completed || 0} / ${repeat.times} 次`}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-warm-muted">下次执行</p>
-            <p className="text-warm-text">{formatTime(job.next_run_at)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-warm-muted">上次执行</p>
-            <p className="text-warm-text">{formatTime(job.last_run_at)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-warm-muted">投递目标</p>
-            <p className="text-warm-text">{PLATFORM_LABELS[job.deliver] || job.deliver || '本地'}</p>
-          </div>
-          <div>
-            <p className="text-xs text-warm-muted">模型</p>
-            <p className="text-warm-text">{job.model || '默认'}</p>
-          </div>
-          <div>
-            <p className="text-xs text-warm-muted">创建时间</p>
-            <p className="text-warm-text">{formatTime(job.created_at)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-warm-muted">上次状态</p>
-            <p className="text-warm-text">{job.last_status || '-'}</p>
-          </div>
-        </div>
-
-        {(job.last_error || job.last_delivery_error) && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 space-y-1">
-            {job.last_error && <p><strong>执行错误：</strong>{job.last_error}</p>}
-            {job.last_delivery_error && <p><strong>投递错误：</strong>{job.last_delivery_error}</p>}
-          </div>
-        )}
-
-        <div className="flex gap-2 pt-1 border-t border-warm-border/50">
-          <button
-            onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-warm-secondary hover:text-hermes-dark hover:bg-hermes/8 rounded-xl transition-colors duration-200"
-          >
-            <Pencil size={13} /> 编辑
-          </button>
-          {!isCompleted && (
-            isPaused ? (
-              <button
-                onClick={() => resumeMut.mutate(job.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors duration-200"
-              >
-                <Play size={13} /> 恢复
-              </button>
-            ) : (
-              <button
-                onClick={() => pauseMut.mutate(job.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-600 hover:bg-amber-50 rounded-xl transition-colors duration-200"
-              >
-                <Pause size={13} /> 暂停
-              </button>
-            )
-          )}
-          <button
-            onClick={() => setConfirm({ type: 'run' })}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-xl transition-colors duration-200"
-          >
-            <Play size={13} /> {isCompleted ? '重新触发' : '立即执行'}
-          </button>
-          <button
-            onClick={() => setConfirm({ type: 'delete' })}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200 ml-auto"
-          >
-            <Trash2 size={13} /> 删除
-          </button>
-        </div>
-      </div>
-
-      {confirm?.type === 'run' && (
-        <ConfirmDialog
-          title={isCompleted ? '重新触发' : '立即执行'}
-          message={`确定要${isCompleted ? '重新触发' : '立即执行'}任务「${job.name}」吗？`}
-          onConfirm={() => {
-            runMut.mutate(job.id, {
-              onSuccess: () => showToast('任务已触发，正在执行中...'),
-            });
-            setConfirm(null);
-          }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-      {confirm?.type === 'delete' && (
-        <ConfirmDialog
-          title="删除任务"
-          message={`确定要删除任务「${job.name}」吗？此操作不可撤销。`}
-          onConfirm={() => { deleteMut.mutate(job.id); setConfirm(null); onBack(); }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-    </div>
+          <Space wrap>
+            <Button icon={<EditOutlined />} onClick={onEdit}>
+              编辑
+            </Button>
+            {!isCompleted ? (
+              <Button icon={isPaused ? <PlayCircleOutlined /> : <PauseCircleOutlined />} onClick={handlePauseResume}>
+                {isPaused ? '恢复' : '暂停'}
+              </Button>
+            ) : null}
+            <Button icon={<PlayCircleOutlined />} onClick={handleRun}>
+              {isCompleted ? '重新触发' : '立即执行'}
+            </Button>
+            <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+              删除
+            </Button>
+          </Space>
+        </Space>
+      </Card>
+    </Space>
   );
 }
 
 function JobItem({ job, onClick }) {
-  const isPaused = job.state === 'paused' || job.state === 'completed';
   return (
-    <button
+    <Card
+      hoverable
+      bordered={false}
       onClick={onClick}
-      className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white shadow-warm hover:shadow-warm-lg hover:-translate-y-0.5 transition-all duration-200 group"
+      className="shadow-warm transition-transform hover:-translate-y-0.5"
     >
-      <CalendarClock size={16} className={cn(
-        'shrink-0 transition-colors duration-200',
-        isPaused ? 'text-warm-muted' : 'text-hermes group-hover:text-hermes-dark'
-      )} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-warm-text truncate font-medium">{job.name}</p>
-          <StateBadge state={job.state} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <Space align="center" size={8} className="mb-2">
+            <Typography.Text strong>{job.name}</Typography.Text>
+            <StateBadge state={job.state} />
+          </Space>
+          <Typography.Paragraph type="secondary" className="!mb-0">
+            <Typography.Text code>{job.schedule_display || '-'}</Typography.Text>
+            {job.next_run_at ? ` · 下次: ${formatTime(job.next_run_at)}` : ''}
+          </Typography.Paragraph>
         </div>
-        <p className="text-xs text-warm-muted mt-0.5">
-          <span className="font-mono">{job.schedule_display || '-'}</span>
-          {job.next_run_at && <span className="ml-2">下次: {formatTime(job.next_run_at)}</span>}
-        </p>
       </div>
-    </button>
+    </Card>
   );
 }
 
 export default function Jobs() {
+  const { message } = App.useApp();
   const { data, isLoading, isError, error } = useJobs();
   const [selectedId, setSelectedId] = useState(null);
   const [mode, setMode] = useState(null);
@@ -512,132 +624,142 @@ export default function Jobs() {
   const updateMut = useUpdateJob();
 
   const jobs = data?.jobs || [];
-  const selectedJob = jobs.find((j) => j.id === selectedId);
-
+  const selectedJob = jobs.find((job) => job.id === selectedId);
   const filtered = search
-    ? jobs.filter((j) => (j.name || '').toLowerCase().includes(search.toLowerCase()))
+    ? jobs.filter((job) => (job.name || '').toLowerCase().includes(search.toLowerCase()))
     : jobs;
 
   if (mode === 'create') {
     return (
-      <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
-        <div className="max-w-4xl mx-auto p-6 space-y-5">
-          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
-            <Timer size={22} className="text-hermes" /> 新建定时任务
-          </h1>
-          <JobForm
-            onSubmit={(data) => createMut.mutate(data, { onSuccess: () => setMode(null) })}
-            onCancel={() => setMode(null)}
-            isSubmitting={createMut.isPending}
-          />
-        </div>
-      </div>
+      <PageShell title="新建定时任务">
+        <JobForm
+          onSubmit={(jobData) =>
+            createMut.mutate(jobData, {
+              onSuccess: (response) => {
+                message.success('任务已创建');
+                setSelectedId(response?.job?.id || null);
+                setMode(null);
+              },
+              onError: (mutationError) => {
+                message.error(mutationError?.message || '创建失败');
+              },
+            })
+          }
+          onCancel={() => setMode(null)}
+          isSubmitting={createMut.isPending}
+        />
+      </PageShell>
     );
   }
 
   if (mode === 'edit' && selectedJob) {
     return (
-      <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
-        <div className="max-w-4xl mx-auto p-6 space-y-5">
-          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
-            <Timer size={22} className="text-hermes" /> 编辑任务
-          </h1>
-          <JobForm
-            job={selectedJob}
-            onSubmit={(data) => updateMut.mutate({ id: selectedJob.id, data }, { onSuccess: () => setMode(null) })}
-            onCancel={() => setMode(null)}
-            isSubmitting={updateMut.isPending}
-          />
-        </div>
-      </div>
+      <PageShell title="编辑任务">
+        <JobForm
+          job={selectedJob}
+          onSubmit={(jobData) =>
+            updateMut.mutate(
+              { id: selectedJob.id, data: jobData },
+              {
+                onSuccess: () => {
+                  message.success('任务已更新');
+                  setMode(null);
+                },
+                onError: (mutationError) => {
+                  message.error(mutationError?.message || '更新失败');
+                },
+              },
+            )
+          }
+          onCancel={() => setMode(null)}
+          isSubmitting={updateMut.isPending}
+        />
+      </PageShell>
     );
   }
 
   if (selectedJob) {
     return (
-      <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
-        <div className="max-w-4xl mx-auto p-6 space-y-5">
-          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
-            <Timer size={22} className="text-hermes" /> 任务详情
-          </h1>
-          <JobDetail
-            job={selectedJob}
-            onBack={() => setSelectedId(null)}
-            onEdit={() => setMode('edit')}
-          />
-        </div>
-      </div>
+      <PageShell title="任务详情">
+        <JobDetail job={selectedJob} onBack={() => setSelectedId(null)} onEdit={() => setMode('edit')} />
+      </PageShell>
     );
   }
 
   const isCronUnavailable = isError && error?.message?.includes('501');
 
   return (
-    <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
-      <div className="max-w-4xl mx-auto p-6 space-y-5 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
-            <Timer size={22} className="text-hermes" /> 定时任务
-          </h1>
-          <button
-            onClick={() => setMode('create')}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-hermes-dark bg-hermes/8 hover:bg-hermes/12 rounded-xl transition-colors duration-200"
-          >
-            <Plus size={14} /> 新建任务
-          </button>
-        </div>
+    <PageShell
+      title="定时任务"
+      extra={
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setMode('create')}>
+          新建任务
+        </Button>
+      }
+    >
+      {isCronUnavailable ? (
+        <Alert
+          type="warning"
+          showIcon
+          icon={<WarningOutlined />}
+          message="定时任务模块不可用"
+          description={
+            <span>
+              后端未安装 <code>croniter</code> 依赖。请运行 <code>uv pip install croniter</code> 并重启 gateway。
+            </span>
+          }
+        />
+      ) : (
+        <Space direction="vertical" size={16} className="w-full">
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="搜索任务..."
+          />
 
-        {isCronUnavailable ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-2 text-xs text-amber-700">
-            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium">定时任务模块不可用</p>
-              <p className="mt-1">后端未安装 <code className="bg-amber-100 px-1 rounded font-mono">croniter</code> 依赖。请运行 <code className="bg-amber-100 px-1 rounded font-mono">uv pip install croniter</code> 并重启 gateway。</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-muted" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索任务..."
-                className="w-full bg-white border border-warm-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-warm-text placeholder:text-warm-muted focus:outline-none focus:border-hermes/40 focus:ring-2 focus:ring-hermes/10 transition-all duration-200"
-              />
-            </div>
-
-            {isLoading ? (
-              <div className="text-sm text-warm-muted animate-pulse">加载中...</div>
-            ) : isError ? (
-              <div className="text-center py-12">
-                <p className="text-sm text-red-500">加载失败</p>
-                <p className="text-xs text-warm-muted mt-1">{error?.message || '未知错误'}</p>
-              </div>
-            ) : !filtered.length ? (
-              <div className="text-center py-12">
-                <Clock size={32} className="mx-auto text-warm-muted/50 mb-3" />
-                <p className="text-sm text-warm-muted">{search ? '无匹配结果' : '暂无定时任务'}</p>
-                {!search && (
-                  <button
-                    onClick={() => setMode('create')}
-                    className="mt-3 text-xs text-hermes hover:text-hermes-dark transition-colors duration-200"
-                  >
+          {isLoading ? (
+            <Space direction="vertical" className="w-full" size={12}>
+              {[...Array(4)].map((_, index) => (
+                <Card key={index} bordered={false} className="shadow-warm">
+                  <Skeleton active paragraph={{ rows: 2 }} />
+                </Card>
+              ))}
+            </Space>
+          ) : isError ? (
+            <Card bordered={false} className="shadow-warm">
+              <Empty description={error?.message || '加载失败'} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            </Card>
+          ) : !filtered.length ? (
+            <Card bordered={false} className="shadow-warm">
+              <Empty
+                description={search ? '无匹配结果' : '暂无定时任务'}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              >
+                {!search ? (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setMode('create')}>
                     创建第一个定时任务
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filtered.map((j) => (
-                  <JobItem key={j.id} job={j} onClick={() => { setSelectedId(j.id); setMode(null); }} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+                  </Button>
+                ) : null}
+              </Empty>
+            </Card>
+          ) : (
+            <Space direction="vertical" className="w-full" size={12}>
+              {filtered.map((job) => (
+                <JobItem
+                  key={job.id}
+                  job={job}
+                  onClick={() => {
+                    setSelectedId(job.id);
+                    setMode(null);
+                  }}
+                />
+              ))}
+            </Space>
+          )}
+        </Space>
+      )}
+    </PageShell>
   );
 }

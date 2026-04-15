@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 
 const router = Router();
@@ -6,11 +7,21 @@ const router = Router();
 const HERMES_API = process.env.HERMES_API_URL || 'http://localhost:8642';
 const API_KEY = process.env.API_SERVER_KEY || '';
 
+function createWebSessionId() {
+  return `web-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+}
+
 router.post('/chat', async (req, res) => {
   const headers = { 'Content-Type': 'application/json' };
   if (API_KEY) headers['Authorization'] = `Bearer ${API_KEY}`;
-  if (req.headers['x-hermes-session-id']) {
-    headers['X-Hermes-Session-Id'] = req.headers['x-hermes-session-id'];
+  const requestedSessionId = req.headers['x-hermes-session-id'];
+  if (requestedSessionId) {
+    headers['X-Hermes-Session-Id'] = requestedSessionId;
+  } else if (API_KEY) {
+    // This web client expects every "new chat" click to create a distinct
+    // session. Without an explicit session ID, Hermes derives one from the
+    // first user message and may accidentally reopen an older conversation.
+    headers['X-Hermes-Session-Id'] = createWebSessionId();
   }
 
   try {

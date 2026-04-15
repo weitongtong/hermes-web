@@ -1,9 +1,29 @@
-import { Trash2 } from 'lucide-react';
-import { cn } from '@/lib/cn';
+import { DeleteOutlined } from '@ant-design/icons';
+import { Button, Card, Popconfirm, Space, Tag, Typography } from 'antd';
 import { formatTokenCount, formatRelativeTime } from '@/lib/format';
+import { stripThinking } from '@/lib/strip-thinking';
+
+function cleanSessionTitle(title) {
+  if (!title) return null;
+
+  const { display } = stripThinking(title);
+  let cleaned = (display || title)
+    .replace(/<\/?(?:think|thinking|reasoning|thought|REASONING_SCRATCHPAD)[^>]*>/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const lower = cleaned.toLowerCase();
+  if (lower.startsWith('the user is asking') || lower.startsWith('the user wants')) {
+    const quoted = cleaned.match(/["“](.+?)["”]/);
+    cleaned = quoted?.[1]?.trim() || '';
+  }
+
+  return cleaned || null;
+}
 
 function getDisplayTitle(session) {
-  if (session.title) return session.title;
+  const cleanedTitle = cleanSessionTitle(session.title);
+  if (cleanedTitle) return cleanedTitle;
   if (session.model) return `${session.model} 对话`;
   if (session.started_at) {
     const d = new Date(session.started_at * 1000);
@@ -12,17 +32,7 @@ function getDisplayTitle(session) {
   return '新对话';
 }
 
-function MetaDot() {
-  return <span className="text-warm-border">·</span>;
-}
-
 export default function SessionItem({ session, isActive, onSelect, onDelete }) {
-  const handleDelete = (e) => {
-    e.stopPropagation();
-    if (!window.confirm('确定删除这个对话吗？删除后无法恢复。')) return;
-    onDelete(session.id);
-  };
-
   const title = getDisplayTitle(session);
   const time = formatRelativeTime(session.started_at);
   const totalTokens = (session.input_tokens || 0) + (session.output_tokens || 0);
@@ -34,54 +44,49 @@ export default function SessionItem({ session, isActive, onSelect, onDelete }) {
   ].filter(Boolean);
 
   return (
-    <button
+    <Card
+      size="small"
+      hoverable
+      bordered={false}
       onClick={() => onSelect(session.id)}
-      title={session.id}
-      className={cn(
-        'w-full text-left px-3 py-2 rounded-lg transition-all duration-150 group relative',
-        isActive ? 'bg-black/[0.025]' : 'hover:bg-black/[0.02]',
-      )}
+      className={isActive ? 'bg-black/[0.03]' : 'bg-transparent'}
+      styles={{ body: { padding: '10px 12px' } }}
     >
-      {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-hermes" />
-      )}
-
-      <span
-        role="button"
-        tabIndex={0}
-        onClick={handleDelete}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleDelete(e); }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 text-warm-muted hover:text-red-500 hover:bg-red-50/80 transition-all duration-150 z-10"
-        title="删除"
-      >
-        <Trash2 size={12} />
-      </span>
-
-      <div className={cn(
-        'text-[13px] truncate pr-6 leading-snug',
-        isActive ? 'text-warm-text font-semibold' : 'text-warm-text',
-      )}>
-        {title}
-      </div>
-
-      {metaParts.length > 0 && (
-        <div className="mt-1 flex items-center gap-1.5 text-[10.5px] text-warm-muted">
-          {session.source && session.source !== 'api_server' && (
-            <>
-              <span className="px-1 py-px rounded bg-surface-overlay text-warm-secondary text-[10px] font-medium">
-                {session.source}
-              </span>
-              <MetaDot />
-            </>
-          )}
-          {metaParts.map((part, i) => (
-            <span key={i} className="flex items-center gap-1.5">
-              {i > 0 && <MetaDot />}
-              {part}
-            </span>
-          ))}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <Typography.Text strong={isActive} ellipsis className="block">
+            {title}
+          </Typography.Text>
+          <Space size={6} wrap className="mt-2">
+            {session.source && session.source !== 'api_server' && (
+              <Tag bordered={false}>{session.source}</Tag>
+            )}
+            {metaParts.map((part) => (
+              <Typography.Text key={part} type="secondary" className="text-[11px]">
+                {part}
+              </Typography.Text>
+            ))}
+          </Space>
         </div>
-      )}
-    </button>
+
+        <Popconfirm
+          title="确定删除这个对话吗？"
+          description="删除后无法恢复。"
+          okText="删除"
+          cancelText="取消"
+          onConfirm={(e) => {
+            e?.stopPropagation?.();
+            onDelete(session.id);
+          }}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<DeleteOutlined />}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </Popconfirm>
+      </div>
+    </Card>
   );
 }

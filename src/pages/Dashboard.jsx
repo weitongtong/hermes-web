@@ -1,55 +1,59 @@
-import { useStatus, useJobs } from '@/hooks/useHermesAPI';
 import {
-  Cpu, Wifi, WifiOff, Brain, Sparkles,
-  Activity, Server, Timer, LayoutDashboard,
-} from 'lucide-react';
-import { cn } from '@/lib/cn';
+  ApiOutlined,
+  CheckCircleFilled,
+  ClockCircleOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+  RobotOutlined,
+  ToolOutlined,
+} from '@ant-design/icons';
+import { Card, Col, Empty, Progress, Row, Skeleton, Space, Statistic, Typography } from 'antd';
+import { useJobs, useStatus } from '@/hooks/useHermesAPI';
 
-const iconBgMap = {
-  hermes: 'bg-hermes/10 text-hermes-dark',
-  blue: 'bg-blue-50 text-blue-600',
-  emerald: 'bg-emerald-50 text-emerald-600',
-  purple: 'bg-purple-50 text-purple-600',
-  amber: 'bg-amber-50 text-amber-600',
-};
-
-function StatCard({ icon: Icon, label, value, sub, theme = 'hermes', delay = 0 }) {
+function StatCard({ icon, label, value, sub, accent }) {
   return (
-    <div
-      className="bg-white rounded-2xl p-5 shadow-warm hover:shadow-warm-lg hover:-translate-y-0.5 transition-all duration-300 animate-fade-in-up"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] text-warm-muted mb-2 font-medium tracking-wide uppercase">{label}</p>
-          <p className="text-xl font-semibold text-warm-text">{value ?? '-'}</p>
-          {sub && <p className="text-xs text-warm-muted mt-1">{sub}</p>}
+    <Card bordered={false} className="h-full shadow-warm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <Typography.Text type="secondary" className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+            {label}
+          </Typography.Text>
+          <Statistic value={value ?? '-'} valueStyle={{ fontSize: 24, color: '#1a1a1e', lineHeight: 1.2 }} />
+          {sub ? (
+            <Typography.Paragraph type="secondary" className="!mb-0 !mt-1 text-[12px]">
+              {sub}
+            </Typography.Paragraph>
+          ) : null}
         </div>
-        <div className={cn('p-2.5 rounded-xl', iconBgMap[theme])}>
-          <Icon size={18} />
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-2xl"
+          style={{ background: `${accent}14`, color: accent }}
+        >
+          {icon}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
 function UsageBar({ label, current, limit, unit = '字符' }) {
   const pct = limit > 0 ? Math.min((current / limit) * 100, 100) : 0;
   const warn = pct > 80;
+
   return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs">
-        <span className="text-warm-secondary">{label}</span>
-        <span className={warn ? 'text-amber-600 font-medium' : 'text-warm-muted'}>
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <Typography.Text>{label}</Typography.Text>
+        <Typography.Text type="secondary">
           {current.toLocaleString()} / {limit.toLocaleString()} {unit}
-        </span>
+        </Typography.Text>
       </div>
-      <div className="h-2 bg-surface-overlay rounded-full overflow-hidden">
-        <div
-          className={cn('h-full rounded-full transition-all duration-700', warn ? 'bg-amber-400' : 'bg-gradient-to-r from-hermes to-hermes-light')}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <Progress
+        percent={Number(pct.toFixed(0))}
+        showInfo={false}
+        strokeColor={warn ? '#f59e0b' : '#dc2626'}
+        trailColor="#f1f3f5"
+      />
     </div>
   );
 }
@@ -60,8 +64,30 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <Activity size={24} className="text-hermes animate-pulse" />
+      <div className="h-full overflow-y-auto bg-surface">
+        <div className="mx-auto max-w-6xl p-6">
+          <Space direction="vertical" className="w-full" size={16}>
+            <Skeleton.Input active block className="!h-10 !w-56" />
+            <Row gutter={[16, 16]}>
+              {[...Array(5)].map((_, index) => (
+                <Col xs={24} sm={12} lg={8} xl={24 / 5} key={index}>
+                  <Card bordered={false} className="shadow-warm">
+                    <Skeleton active paragraph={{ rows: 1 }} />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+            <Row gutter={[16, 16]}>
+              {[...Array(2)].map((_, index) => (
+                <Col xs={24} lg={12} key={index}>
+                  <Card bordered={false} className="shadow-warm">
+                    <Skeleton active paragraph={{ rows: 4 }} />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Space>
+        </div>
       </div>
     );
   }
@@ -70,58 +96,109 @@ export default function Dashboard() {
   const platforms = status?.platforms || [];
   const memory = status?.memory || {};
   const jobs = jobsData?.jobs || [];
-  const activeJobs = jobs.filter((j) => j.enabled && j.state !== 'paused').length;
-  const pausedJobs = jobs.filter((j) => !j.enabled || j.state === 'paused').length;
+  const activeJobs = jobs.filter((job) => job.enabled && job.state !== 'paused').length;
+  const pausedJobs = jobs.filter((job) => !job.enabled || job.state === 'paused').length;
 
   return (
-    <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
-        <div className="animate-fade-in">
-          <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
-            <LayoutDashboard size={22} className="text-hermes" /> 仪表盘
-          </h1>
-          <p className="text-sm text-warm-muted mt-1">Hermes Agent 系统状态概览</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard icon={Cpu} label="模型" value={model.default || '未设置'} sub={model.provider ? `提供方：${model.provider}` : ''} theme="hermes" delay={0} />
-          <StatCard icon={Server} label="平台" value={platforms.length} sub={platforms.map((p) => p.name).join(', ') || '无'} theme="blue" delay={50} />
-          <StatCard icon={Brain} label="记忆" value={`${(memory.memoryChars || 0) + (memory.userChars || 0)}`} sub="字符" theme="emerald" delay={100} />
-          <StatCard icon={Sparkles} label="技能" value={status?.skillCount ?? 0} sub="已安装" theme="purple" delay={150} />
-          <StatCard icon={Timer} label="定时任务" value={jobs.length} sub={pausedJobs > 0 ? `${activeJobs} 活跃 / ${pausedJobs} 已暂停` : `${activeJobs} 活跃`} theme="amber" delay={200} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div className="bg-white rounded-2xl p-5 space-y-4 shadow-warm animate-fade-in-up" style={{ animationDelay: '250ms' }}>
-            <h2 className="text-sm font-medium text-warm-text">记忆用量</h2>
-            <UsageBar label="MEMORY.md" current={memory.memoryChars || 0} limit={memory.memoryLimit || 2200} />
-            <UsageBar label="USER.md" current={memory.userChars || 0} limit={memory.userLimit || 1375} />
+    <div className="h-full overflow-y-auto bg-surface">
+      <div className="mx-auto max-w-6xl p-6">
+        <Space direction="vertical" size={20} className="w-full">
+          <div>
+            <Space align="center" size={12}>
+              <DashboardOutlined className="text-[22px] text-hermes" />
+              <Typography.Title level={2} className="!mb-0">
+                仪表盘
+              </Typography.Title>
+            </Space>
+            <Typography.Paragraph type="secondary" className="!mb-0 !mt-2">
+              Hermes Agent 系统状态概览
+            </Typography.Paragraph>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 shadow-warm animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-            <h2 className="text-sm font-medium text-warm-text mb-3">平台</h2>
-            {platforms.length === 0 ? (
-              <p className="text-xs text-warm-muted">暂无已配置的平台</p>
-            ) : (
-              <div className="space-y-2">
-                {platforms.map((p) => (
-                  <div key={p.name} className="flex items-center gap-3 text-sm py-1.5 px-2 rounded-lg hover:bg-surface-overlay/60 transition-colors duration-200">
-                    {p.enabled ? (
-                      <Wifi size={14} className="text-emerald-500" />
-                    ) : (
-                      <WifiOff size={14} className="text-warm-muted" />
-                    )}
-                    <span className="text-warm-text">{p.name}</span>
-                    <span className={cn('text-xs ml-auto font-medium', p.enabled ? 'text-emerald-600' : 'text-warm-muted')}>
-                      {p.enabled ? '已启用' : '已禁用'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={8} xl={24 / 5}>
+              <StatCard
+                icon={<RobotOutlined className="text-[20px]" />}
+                label="模型"
+                value={model.default || '未设置'}
+                sub={model.provider ? `提供方：${model.provider}` : ''}
+                accent="#dc2626"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8} xl={24 / 5}>
+              <StatCard
+                icon={<ApiOutlined className="text-[20px]" />}
+                label="平台"
+                value={platforms.length}
+                sub={platforms.map((platform) => platform.name).join('、') || '无'}
+                accent="#2563eb"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8} xl={24 / 5}>
+              <StatCard
+                icon={<DatabaseOutlined className="text-[20px]" />}
+                label="记忆"
+                value={`${(memory.memoryChars || 0) + (memory.userChars || 0)}`}
+                sub="字符"
+                accent="#059669"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8} xl={24 / 5}>
+              <StatCard
+                icon={<ToolOutlined className="text-[20px]" />}
+                label="技能"
+                value={status?.skillCount ?? 0}
+                sub="已安装"
+                accent="#7c3aed"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8} xl={24 / 5}>
+              <StatCard
+                icon={<ClockCircleOutlined className="text-[20px]" />}
+                label="定时任务"
+                value={jobs.length}
+                sub={pausedJobs > 0 ? `${activeJobs} 活跃 / ${pausedJobs} 已暂停` : `${activeJobs} 活跃`}
+                accent="#d97706"
+              />
+            </Col>
+          </Row>
 
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={12}>
+              <Card bordered={false} className="h-full shadow-warm" title="记忆用量">
+                <Space direction="vertical" className="w-full" size={20}>
+                  <UsageBar label="MEMORY.md" current={memory.memoryChars || 0} limit={memory.memoryLimit || 2200} />
+                  <UsageBar label="USER.md" current={memory.userChars || 0} limit={memory.userLimit || 1375} />
+                </Space>
+              </Card>
+            </Col>
+
+            <Col xs={24} lg={12}>
+              <Card bordered={false} className="h-full shadow-warm" title="平台状态">
+                {!platforms.length ? (
+                  <Empty description="暂无已配置的平台" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ) : (
+                  <Space direction="vertical" className="w-full" size={12}>
+                    {platforms.map((platform) => (
+                      <div
+                        key={platform.name}
+                        className="flex items-center justify-between rounded-2xl border border-warm-border/40 bg-surface-overlay/30 px-4 py-3"
+                      >
+                        <Space size={10}>
+                          <CheckCircleFilled className={platform.enabled ? 'text-emerald-500' : 'text-warm-muted'} />
+                          <Typography.Text>{platform.name}</Typography.Text>
+                        </Space>
+                        <Typography.Text type={platform.enabled ? undefined : 'secondary'}>
+                          {platform.enabled ? '已启用' : '已禁用'}
+                        </Typography.Text>
+                      </div>
+                    ))}
+                  </Space>
+                )}
+              </Card>
+            </Col>
+          </Row>
+        </Space>
       </div>
     </div>
   );

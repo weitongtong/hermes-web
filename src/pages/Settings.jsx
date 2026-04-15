@@ -1,17 +1,30 @@
-import { useState } from 'react';
+import {
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  SaveOutlined,
+  SettingOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Alert, App, Button, Card, Collapse, Input, Skeleton, Space, Table, Typography } from 'antd';
+import { useMemo, useState } from 'react';
 import { useConfig, useEnv } from '@/hooks/useHermesAPI';
 import { api } from '@/lib/api';
-import { Settings as SettingsIcon, Save, AlertTriangle, Eye, EyeOff } from 'lucide-react';
-import { cn } from '@/lib/cn';
 
 function ConfigSection({ config }) {
   const [edits, setEdits] = useState({});
   const queryClient = useQueryClient();
+  const { message } = App.useApp();
 
   const mutation = useMutation({
     mutationFn: (patch) => api.patchConfig(patch),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['config'] });
+      message.success('配置已保存');
+    },
+    onError: (error) => {
+      message.error(error?.message || '保存失败');
+    },
   });
 
   const modelDefault = edits['model.default'] ?? (typeof config.model === 'object' ? config.model.default : config.model) ?? '';
@@ -26,62 +39,70 @@ function ConfigSection({ config }) {
         ...(edits['model.provider'] !== undefined && { provider: edits['model.provider'] }),
       };
     }
-    if (edits['tools'] !== undefined) {
-      try { patch.tools = JSON.parse(edits['tools']); } catch { /* skip */ }
+
+    if (Object.keys(patch).length > 0) {
+      mutation.mutate(patch, {
+        onSuccess: () => setEdits({}),
+      });
     }
-    if (Object.keys(patch).length > 0) mutation.mutate(patch);
-    setEdits({});
   };
 
   return (
-    <div className="bg-white rounded-2xl p-5 space-y-5 shadow-warm">
-      <h2 className="text-sm font-semibold text-warm-text">config.yaml</h2>
+    <Card bordered={false} className="shadow-warm" title="config.yaml">
+      <Space direction="vertical" size={18} className="w-full">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <Typography.Text type="secondary" className="mb-2 block text-[12px]">
+              模型
+            </Typography.Text>
+            <Input
+              value={modelDefault}
+              onChange={(e) => setEdits((prev) => ({ ...prev, 'model.default': e.target.value }))}
+              placeholder="默认模型 ID"
+            />
+          </div>
+          <div>
+            <Typography.Text type="secondary" className="mb-2 block text-[12px]">
+              提供方
+            </Typography.Text>
+            <Input
+              value={modelProvider}
+              onChange={(e) => setEdits((prev) => ({ ...prev, 'model.provider': e.target.value }))}
+              placeholder="provider 名称"
+            />
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="模型" value={modelDefault} onChange={(v) => setEdits({ ...edits, 'model.default': v })} />
-        <Field label="提供方" value={modelProvider} onChange={(v) => setEdits({ ...edits, 'model.provider': v })} />
-      </div>
+        <Space>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={handleSave}
+            loading={mutation.isPending}
+            disabled={Object.keys(edits).length === 0}
+          >
+            保存
+          </Button>
+          <Typography.Text type="secondary">
+            修改后需要重启 gateway 才能完全生效。
+          </Typography.Text>
+        </Space>
 
-      <div>
-        <label className="text-xs text-warm-muted block mb-1.5 font-medium">原始配置 (JSON)</label>
-        <pre className="bg-surface-overlay rounded-xl p-4 text-xs text-warm-secondary overflow-auto max-h-64 font-mono border border-warm-border/60">
-          {JSON.stringify(config, null, 2)}
-        </pre>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleSave}
-          disabled={Object.keys(edits).length === 0}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-            Object.keys(edits).length > 0
-              ? 'bg-gradient-to-r from-hermes to-hermes-dark text-white shadow-warm hover:shadow-warm-lg'
-              : 'bg-surface-overlay text-warm-muted cursor-not-allowed'
-          )}
-        >
-          <Save size={14} />
-          保存
-        </button>
-        {mutation.isSuccess && (
-          <span className="text-xs text-emerald-600 font-medium">保存成功</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, value, onChange, type = 'text' }) {
-  return (
-    <div>
-      <label className="text-xs text-warm-muted block mb-1.5 font-medium">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white border border-warm-border rounded-xl px-3 py-2.5 text-sm text-warm-text focus:outline-none focus:border-hermes/40 focus:ring-2 focus:ring-hermes/10 transition-all duration-200"
-      />
-    </div>
+        <Collapse
+          items={[
+            {
+              key: 'raw',
+              label: '原始配置 (JSON)',
+              children: (
+                <pre className="max-h-72 overflow-auto rounded-2xl border border-warm-border/60 bg-surface-overlay/60 p-4 text-xs text-warm-secondary">
+                  {JSON.stringify(config, null, 2)}
+                </pre>
+              ),
+            },
+          ]}
+        />
+      </Space>
+    </Card>
   );
 }
 
@@ -89,46 +110,65 @@ function EnvSection() {
   const { data: envVars, isLoading } = useEnv();
   const [showKeys, setShowKeys] = useState({});
 
-  if (isLoading) return <div className="text-sm text-warm-muted animate-pulse">加载中...</div>;
+  const rows = useMemo(
+    () =>
+      Object.entries(envVars || {}).map(([key, value]) => ({
+        key,
+        name: key,
+        value,
+        masked: value === '****',
+      })),
+    [envVars],
+  );
+
+  if (isLoading) {
+    return (
+      <Card bordered={false} className="shadow-warm" title="环境变量 (.env)">
+        <Skeleton active paragraph={{ rows: 6 }} />
+      </Card>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-2xl p-5 space-y-4 shadow-warm">
-      <h2 className="text-sm font-semibold text-warm-text">环境变量 (.env)</h2>
-
-      {!envVars || Object.keys(envVars).length === 0 ? (
-        <p className="text-xs text-warm-muted">未找到环境变量</p>
-      ) : (
-        <div className="rounded-xl border border-warm-border/60 overflow-hidden">
-          {Object.entries(envVars).map(([key, value], i) => {
-            const masked = value === '****';
-            const shown = showKeys[key];
-            return (
-              <div
-                key={key}
-                className={cn(
-                  'flex items-center gap-3 text-sm px-4 py-2.5',
-                  i % 2 === 0 ? 'bg-white' : 'bg-surface-overlay/30'
-                )}
-              >
-                <span className="font-mono text-xs text-warm-text w-52 truncate shrink-0 font-medium">{key}</span>
-                <span className="text-xs text-warm-muted flex-1 truncate font-mono">
-                  {masked && !shown ? '••••••••' : value}
-                </span>
-                {masked && (
-                  <button
-                    onClick={() => setShowKeys((p) => ({ ...p, [key]: !p[key] }))}
-                    className="text-warm-muted hover:text-warm-secondary transition-colors duration-200"
-                    title={shown ? '隐藏' : '显示'}
-                  >
-                    {shown ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <Card bordered={false} className="shadow-warm" title="环境变量 (.env)">
+      <Table
+        size="small"
+        rowKey="key"
+        pagination={false}
+        dataSource={rows}
+        locale={{ emptyText: '未找到环境变量' }}
+        columns={[
+          {
+            title: '键名',
+            dataIndex: 'name',
+            width: 260,
+            render: (name) => <Typography.Text code>{name}</Typography.Text>,
+          },
+          {
+            title: '值',
+            dataIndex: 'value',
+            render: (value, record) => (
+              <Typography.Text type="secondary" className="font-mono">
+                {record.masked && !showKeys[record.key] ? '••••••••' : value}
+              </Typography.Text>
+            ),
+          },
+          {
+            title: '',
+            width: 72,
+            align: 'right',
+            render: (_value, record) =>
+              record.masked ? (
+                <Button
+                  type="text"
+                  icon={showKeys[record.key] ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  onClick={() => setShowKeys((prev) => ({ ...prev, [record.key]: !prev[record.key] }))}
+                />
+              ) : null,
+          },
+        ]}
+      />
+    </Card>
   );
 }
 
@@ -136,24 +176,40 @@ export default function Settings() {
   const { data: config, isLoading } = useConfig();
 
   return (
-    <div className="h-full overflow-y-auto scrollbar-thin bg-surface">
-      <div className="max-w-4xl mx-auto p-6 space-y-5 animate-fade-in">
-        <h1 className="text-2xl font-semibold text-warm-text flex items-center gap-2.5">
-          <SettingsIcon size={22} className="text-hermes" /> 设置
-        </h1>
+    <div className="h-full overflow-y-auto bg-surface">
+      <div className="mx-auto max-w-5xl p-6">
+        <Space direction="vertical" size={20} className="w-full">
+          <div>
+            <Space align="center" size={12}>
+              <SettingOutlined className="text-[22px] text-hermes" />
+              <Typography.Title level={2} className="!mb-0">
+                设置
+              </Typography.Title>
+            </Space>
+          </div>
 
-        <div className="bg-hermes/5 border border-hermes/15 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-hermes-dark">
-          <AlertTriangle size={14} className="shrink-0 mt-0.5 text-hermes" />
-          <span>修改 config.yaml 和 .env 后需要重启 <code className="bg-hermes/10 px-1.5 py-0.5 rounded-md font-mono text-hermes-dark">hermes gateway</code> 才能生效。</span>
-        </div>
+          <Alert
+            type="warning"
+            showIcon
+            icon={<WarningOutlined />}
+            message="修改配置后需要重启 Hermes gateway"
+            description={(
+              <span>
+                修改 <code>config.yaml</code> 和 <code>.env</code> 后，需要重启 gateway 才能生效。
+              </span>
+            )}
+          />
 
-        {isLoading ? (
-          <div className="text-sm text-warm-muted animate-pulse">加载中...</div>
-        ) : (
-          <ConfigSection config={config || {}} />
-        )}
+          {isLoading ? (
+            <Card bordered={false} className="shadow-warm">
+              <Skeleton active paragraph={{ rows: 5 }} />
+            </Card>
+          ) : (
+            <ConfigSection config={config || {}} />
+          )}
 
-        <EnvSection />
+          <EnvSection />
+        </Space>
       </div>
     </div>
   );

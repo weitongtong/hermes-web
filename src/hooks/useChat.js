@@ -9,6 +9,29 @@ function nextId() {
   return `msg-${Date.now()}-${++msgCounter}`;
 }
 
+function buildOptimisticSession(sessionId, firstMessage) {
+  const preview = firstMessage.trim().replace(/\s+/g, ' ').slice(0, 80);
+  return {
+    id: sessionId,
+    source: 'api_server',
+    model: 'hermes-agent',
+    title: preview || null,
+    message_count: 1,
+    started_at: Math.floor(Date.now() / 1000),
+    ended_at: null,
+    input_tokens: 0,
+    output_tokens: 0,
+    estimated_cost_usd: 0,
+  };
+}
+
+function upsertSession(existing, incoming) {
+  const list = Array.isArray(existing) ? existing : [];
+  const merged = [incoming, ...list.filter((session) => session.id !== incoming.id)];
+  merged.sort((a, b) => (b.started_at || 0) - (a.started_at || 0));
+  return merged;
+}
+
 function mergeToolCallChunks(existing, incoming) {
   const merged = [...(existing || [])];
   for (const chunk of incoming) {
@@ -43,14 +66,41 @@ export function useChat({ sessionId: urlSessionId, onSessionCreated } = {}) {
   const abortRef = useRef(null);
   const activeSessionId = useRef(null);
   const messagesRef = useRef([]);
+  const titleRefreshTimersRef = useRef([]);
   const queryClient = useQueryClient();
+
+  const clearTitleRefreshTimers = useCallback(() => {
+    for (const timer of titleRefreshTimersRef.current) {
+      window.clearTimeout(timer);
+    }
+    titleRefreshTimersRef.current = [];
+  }, []);
+
+  const refreshSessionQueries = useCallback((sessionId) => {
+    queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    if (sessionId) {
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+    }
+  }, [queryClient]);
+
+  const scheduleTitleRefreshes = useCallback((sessionId) => {
+    if (!sessionId) return;
+    clearTitleRefreshTimers();
+    for (const delay of [1500, 5000, 12000]) {
+      const timer = window.setTimeout(() => refreshSessionQueries(sessionId), delay);
+      titleRefreshTimersRef.current.push(timer);
+    }
+  }, [clearTitleRefreshTimers, refreshSessionQueries]);
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
 
+  useEffect(() => clearTitleRefreshTimers, [clearTitleRefreshTimers]);
+
   useEffect(() => {
     if (urlSessionId && urlSessionId !== activeSessionId.current) {
+      clearTitleRefreshTimers();
       activeSessionId.current = urlSessionId;
       setIsLoadingHistory(true);
       api
@@ -65,10 +115,11 @@ export function useChat({ sessionId: urlSessionId, onSessionCreated } = {}) {
         .catch(() => setMessages([]))
         .finally(() => setIsLoadingHistory(false));
     } else if (!urlSessionId && activeSessionId.current) {
+      clearTitleRefreshTimers();
       activeSessionId.current = null;
       setMessages([]);
     }
-  }, [urlSessionId]);
+  }, [clearTitleRefreshTimers, urlSessionId]);
 
   const sendMessage = useCallback(
     async (content) => {
@@ -80,9 +131,11 @@ export function useChat({ sessionId: urlSessionId, onSessionCreated } = {}) {
 
       const controller = new AbortController();
       abortRef.current = controller;
+      let shouldPollForTitle = false;
 
       try {
         const currentMessages = messagesRef.current;
+        shouldPollForTitle = currentMessages.filter((msg) => msg.role === 'user').length === 0;
         const apiMessages = [...currentMessages, userMsg].map(({ role, content: c }) => ({
           role,
           content: c,
@@ -113,7 +166,14 @@ export function useChat({ sessionId: urlSessionId, onSessionCreated } = {}) {
         if (newSessionId && newSessionId !== activeSessionId.current) {
           const isNew = !activeSessionId.current;
           activeSessionId.current = newSessionId;
-          if (isNew) onSessionCreated?.(newSessionId);
+          if (isNew) {
+            // Show a brand-new chat in the sidebar immediately while state.db catches up.
+            queryClient.setQueriesData(
+              { queryKey: ['sessions'] },
+              (existing) => upsertSession(existing, buildOptimisticSession(newSessionId, content)),
+            );
+            onSessionCreated?.(newSessionId);
+          }
         }
 
         let accumulated = '';
@@ -158,10 +218,13 @@ export function useChat({ sessionId: urlSessionId, onSessionCreated } = {}) {
       } finally {
         setIsStreaming(false);
         abortRef.current = null;
-        queryClient.invalidateQueries({ queryKey: ['sessions'] });
+        refreshSessionQueries(activeSessionId.current);
+        if (shouldPollForTitle && activeSessionId.current) {
+          scheduleTitleRefreshes(activeSessionId.current);
+        }
       }
     },
-    [onSessionCreated, queryClient],
+    [onSessionCreated, queryClient, refreshSessionQueries, scheduleTitleRefreshes],
   );
 
   const stopStreaming = useCallback(() => {
@@ -170,10 +233,11 @@ export function useChat({ sessionId: urlSessionId, onSessionCreated } = {}) {
 
   const resetChat = useCallback(() => {
     abortRef.current?.abort();
+    clearTitleRefreshTimers();
     setMessages([]);
     setIsStreaming(false);
     activeSessionId.current = null;
-  }, []);
+  }, [clearTitleRefreshTimers]);
 
   return {
     messages,

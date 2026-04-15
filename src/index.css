@@ -24,9 +24,15 @@
 }
 
 body {
+  margin: 0;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #f8f9fa;
+}
+
+html, body, #root {
+  min-height: 100%;
 }
 
 ::selection {

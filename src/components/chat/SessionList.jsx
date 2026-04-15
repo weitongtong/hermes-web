@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Search, X } from 'lucide-react';
-import { useSessions, useDeleteSession, useSessionSearch } from '@/hooks/useHermesAPI';
-import { cn } from '@/lib/cn';
+import { CloseCircleFilled, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Input, Skeleton, Space, Typography } from 'antd';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useDeleteSession, useSessionSearch, useSessions } from '@/hooks/useHermesAPI';
 import SessionItem from './SessionItem';
 
 function groupByDate(sessions) {
@@ -57,28 +57,24 @@ function highlightSnippet(snippet) {
 
 function SearchResultItem({ result, isActive, onSelect }) {
   const bestSnippet = result.snippets[0] || '';
+
   return (
     <button
       onClick={() => onSelect(result.session_id)}
-      className={cn(
-        'w-full text-left px-3 py-2 rounded-lg transition-all duration-150 group relative',
-        isActive ? 'bg-black/[0.025]' : 'hover:bg-black/[0.02]',
-      )}
+      className={`w-full rounded-2xl px-3 py-2 text-left transition-colors ${isActive ? 'bg-black/[0.03]' : 'bg-transparent hover:bg-black/[0.02]'}`}
     >
-      {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-hermes" />
-      )}
-      <div className="text-[13px] truncate pr-2 leading-snug text-warm-text">
+      <Typography.Text strong={isActive} ellipsis className="block">
         {result.title || result.session_id}
-      </div>
-      <p
-        className="mt-0.5 text-[11px] text-warm-muted line-clamp-2 leading-relaxed"
+      </Typography.Text>
+      <Typography.Paragraph
+        className="!mb-0 !mt-1 !text-[12px] text-warm-muted"
+        ellipsis={{ rows: 2 }}
         dangerouslySetInnerHTML={{ __html: highlightSnippet(bestSnippet) }}
       />
       {result.snippets.length > 1 && (
-        <span className="text-[10px] text-warm-muted/60 mt-0.5 inline-block">
+        <Typography.Text type="secondary" className="mt-1 inline-block text-[11px]">
           +{result.snippets.length - 1} 条匹配
-        </span>
+        </Typography.Text>
       )}
     </button>
   );
@@ -97,7 +93,6 @@ export default function SessionList() {
   const { data: searchResults, isFetching: isFtsLoading } = useSessionSearch(debouncedSearch);
 
   const handleSelect = (id) => navigate(`/chat/${encodeURIComponent(id)}`);
-
   const handleDelete = (id) => {
     deleteSession.mutate(id, {
       onSuccess: () => {
@@ -106,113 +101,90 @@ export default function SessionList() {
     });
   };
 
-  const localFiltered = (search && !useFts)
+  const localFiltered = search && !useFts
     ? sessions?.filter((s) => (s.title || s.id).toLowerCase().includes(search.toLowerCase()))
-    : (!search ? sessions : null);
+    : !search ? sessions : null;
 
   const groups = localFiltered ? groupByDate(localFiltered) : [];
-  const ftsGroups = (useFts && searchResults) ? groupSearchResults(searchResults) : null;
+  const ftsGroups = useFts && searchResults ? groupSearchResults(searchResults) : null;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
-        <span className="text-xs font-semibold text-warm-muted uppercase tracking-wider">对话</span>
-        <button
-          onClick={() => navigate('/chat')}
-          className="p-1 rounded-md text-warm-muted hover:text-hermes hover:bg-hermes/6 transition-colors duration-150"
-          title="新建对话"
-        >
-          <Plus size={15} />
-        </button>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center justify-between px-1 pb-3">
+        <Typography.Text type="secondary" className="text-[12px] font-semibold uppercase tracking-[0.18em]">
+          对话
+        </Typography.Text>
+        <Button type="text" size="small" icon={<PlusOutlined />} onClick={() => navigate('/chat')} />
       </div>
 
-      <div className="px-3 pb-2 shrink-0">
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-warm-muted/60" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索..."
-            className="w-full bg-surface-overlay/60 border-none rounded-lg pl-8 pr-8 py-1.5 text-xs text-warm-text placeholder:text-warm-muted/50 focus:outline-none focus:ring-1 focus:ring-hermes/20 focus:bg-white transition-all duration-200"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-warm-muted hover:text-warm-text"
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
-      </div>
+      <Input
+        allowClear={{ clearIcon: <CloseCircleFilled /> }}
+        prefix={<SearchOutlined />}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="搜索..."
+        className="mb-3"
+      />
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-2 pb-2">
+      <div className="flex-1 overflow-y-auto pr-1">
         {isLoading ? (
-          <div className="space-y-2 px-2 pt-4">
+          <Space direction="vertical" className="w-full" size={8}>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 rounded-xl bg-surface-overlay/40 animate-shimmer" />
+              <Skeleton.Button key={i} active block className="!h-16 !rounded-2xl" />
             ))}
-          </div>
+          </Space>
         ) : isError ? (
-          <div className="text-xs text-center py-8 px-3">
-            <p className="text-red-400 font-medium">加载失败</p>
-            <p className="text-warm-muted mt-1 break-all">{error?.message || '未知错误'}</p>
-          </div>
+          <Empty
+            description={error?.message || '加载失败'}
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
         ) : useFts ? (
-          isFtsLoading || (debouncedSearch !== search) ? (
-            <div className="space-y-2 px-2 pt-4">
+          isFtsLoading || debouncedSearch !== search ? (
+            <Space direction="vertical" className="w-full" size={8}>
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-14 rounded-xl bg-surface-overlay/40 animate-shimmer" />
+                <Skeleton.Button key={i} active block className="!h-16 !rounded-2xl" />
               ))}
-            </div>
+            </Space>
           ) : !ftsGroups?.length ? (
-            <div className="flex flex-col items-center justify-center py-12 text-warm-muted">
-              <p className="text-xs">没有匹配的对话</p>
-            </div>
+            <Empty description="没有匹配的对话" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
-            <div className="space-y-px">
-              <p className="px-3 pt-1 pb-2 text-[10px] text-warm-muted/60">
+            <Space direction="vertical" className="w-full" size={4}>
+              <Typography.Text type="secondary" className="px-1 text-[11px]">
                 {searchResults.length} 条匹配 · {ftsGroups.length} 个会话
-              </p>
-              {ftsGroups.map((r) => (
+              </Typography.Text>
+              {ftsGroups.map((result) => (
                 <SearchResultItem
-                  key={r.session_id}
-                  result={r}
-                  isActive={activeId === r.session_id}
+                  key={result.session_id}
+                  result={result}
+                  isActive={activeId === result.session_id}
                   onSelect={handleSelect}
                 />
               ))}
-            </div>
+            </Space>
           )
         ) : groups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-warm-muted">
-            <p className="text-xs">{search ? '没有匹配的对话' : '暂无对话'}</p>
-          </div>
+          <Empty description={search ? '没有匹配的对话' : '暂无对话'} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
-          <div className="space-y-3">
+          <Space direction="vertical" className="w-full" size={12}>
             {groups.map((group) => (
               <div key={group.label}>
-                <p className={cn(
-                  'px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-warm-muted/60',
-                  search && 'hidden',
-                )}>
+                <Typography.Text type="secondary" className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
                   {group.label}
-                </p>
-                <div className="space-y-px">
-                  {group.items.map((s) => (
+                </Typography.Text>
+                <Space direction="vertical" className="mt-2 w-full" size={6}>
+                  {group.items.map((session) => (
                     <SessionItem
-                      key={s.id}
-                      session={s}
-                      isActive={activeId === s.id}
+                      key={session.id}
+                      session={session}
+                      isActive={activeId === session.id}
                       onSelect={handleSelect}
                       onDelete={handleDelete}
                     />
                   ))}
-                </div>
+                </Space>
               </div>
             ))}
-          </div>
+          </Space>
         )}
       </div>
     </div>

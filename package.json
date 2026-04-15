@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.75.5",
+    "antd": "^6.3.5",
     "better-sqlite3": "^11.9.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
